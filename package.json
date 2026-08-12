@@ -10,6 +10,7 @@
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
+    "release": "npm run build && electron-builder --publish always",
     "typecheck": "tsc -b",
     "test": "vitest run"
   },
@@ -17,6 +18,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@xyflow/react": "^12.11.2",
     "dagre": "^0.8.5",

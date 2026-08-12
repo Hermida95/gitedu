@@ -1,0 +1,37 @@
+name: Release
+
+# Se dispara solo con un tag vX.Y.Z (git tag v0.3.1 && git push --tags).
+# Construye el instalador de cada plataforma en su propio runner nativo —
+# electron-builder no compila para macOS/Windows/Linux desde una sola
+# máquina, cada sistema operativo empaqueta el suyo — y los sube como
+# assets de la release de ese tag.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+
+      - run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,6 +4,14 @@ directories:
   output: release
   buildResources: build
 
+# Usado por `electron-builder --publish always` en el workflow de release: sube
+# el instalador de cada plataforma como asset del tag que disparó el build,
+# sin tocar nada si se ejecuta localmente sin --publish.
+publish:
+  provider: github
+  owner: Hermida95
+  repo: gitedu
+
 files:
   - out/**/*
   - package.json
