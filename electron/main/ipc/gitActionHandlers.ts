@@ -3,6 +3,7 @@ import {
   abortMerge,
   abortRebase,
   checkoutBranch,
+  cloneRepo,
   commitChanges,
   continueMerge,
   continueRebase,
@@ -86,4 +87,8 @@ export function registerGitActionHandlers(): void {
       return runInteractiveRebase(repoPath, ontoBranch, steps)
     }
   )
+
+  ipcMain.handle(IPC_CHANNELS.CLONE_REPO, async (_event, remoteUrl: string) => {
+    return cloneRepo(remoteUrl)
+  })
 }

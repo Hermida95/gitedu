@@ -2,6 +2,7 @@
 
 import type {
   BranchListResult,
+  CloneRepoResult,
   CommitGraphData,
   ConflictState,
   GitActionResult,
@@ -41,6 +42,8 @@ declare global {
 
       getRebaseCommits: (repoPath: string, ontoBranch: string) => Promise<RebaseCommitsResult>
       runInteractiveRebase: (repoPath: string, ontoBranch: string, steps: RebaseStep[]) => Promise<GitActionResult>
+
+      cloneRepo: (remoteUrl: string) => Promise<CloneRepoResult>
     }
   }
 }

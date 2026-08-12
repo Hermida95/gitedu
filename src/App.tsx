@@ -9,6 +9,8 @@ import { InteractiveRebasePanel } from './components/rebase/InteractiveRebasePan
 import { CommandLog, type LastCommand } from './components/CommandLog'
 import { buildCommandPreview, type GitAction } from './lib/gitCommandPreview'
 
+const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
+
 function App() {
   const [repoPath, setRepoPath] = useState('')
   const [commits, setCommits] = useState<Commit[]>([])
@@ -52,6 +54,33 @@ function App() {
     setBranches(branchResult.success ? branchResult.branches : [])
     setConflictState(conflictResult)
     setLoading(false)
+  }
+
+  // El input acepta tanto una ruta local como una URL remota (https://... o
+  // git@...): si detecta una URL, clona primero a ~/GitEdu-Repos y luego carga
+  // el clon local — GitEdu nunca opera directamente sobre un repo remoto.
+  async function loadOrClone(input: string) {
+    const trimmed = input.trim()
+    if (!trimmed) return
+
+    if (!isRemoteUrl(trimmed)) {
+      await refreshRepo(trimmed)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    const cloneResult = await window.gitedu.cloneRepo(trimmed)
+    setLastCommand({ command: cloneResult.command, success: cloneResult.success, error: cloneResult.error })
+
+    if (!cloneResult.success) {
+      setError(cloneResult.error ?? 'No se pudo clonar el repositorio.')
+      setLoading(false)
+      return
+    }
+
+    setRepoPath(cloneResult.localPath)
+    await refreshRepo(cloneResult.localPath)
   }
 
   async function handleBrowse() {
@@ -159,10 +188,10 @@ function App() {
         <div className="flex gap-2">
           <input
             className="flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-sm outline-none focus:border-emerald-500"
-            placeholder="/ruta/al/repositorio"
+            placeholder="/ruta/al/repositorio o https://github.com/usuario/repo"
             value={repoPath}
             onChange={(e) => setRepoPath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && refreshRepo(repoPath)}
+            onKeyDown={(e) => e.key === 'Enter' && loadOrClone(repoPath)}
           />
           <button
             className="rounded border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800"
@@ -172,12 +201,18 @@ function App() {
           </button>
           <button
             className="rounded bg-emerald-600 px-4 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
-            onClick={() => refreshRepo(repoPath)}
+            onClick={() => loadOrClone(repoPath)}
             disabled={loading || !repoPath}
           >
-            {loading ? 'Cargando...' : 'Cargar grafo'}
+            {loading ? 'Cargando...' : isRemoteUrl(repoPath) ? 'Clonar y cargar' : 'Cargar grafo'}
           </button>
         </div>
+
+        {isRemoteUrl(repoPath) && !loading && (
+          <p className="mt-2 text-xs text-slate-500">
+            Se clonará en <code className="font-mono">~/GitEdu-Repos/</code> y luego se cargará desde ahí.
+          </p>
+        )}
 
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 

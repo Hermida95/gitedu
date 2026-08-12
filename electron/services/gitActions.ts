@@ -3,7 +3,7 @@ import { promisify } from 'node:util'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import type { GitActionResult, RebaseStep } from '../../shared/ipc-contract'
+import type { CloneRepoResult, GitActionResult, RebaseStep } from '../../shared/ipc-contract'
 import { GIT_ENV, assertGitRepo, extractGitErrorMessage } from './gitService'
 
 const execFileAsync = promisify(execFile)
@@ -170,5 +170,38 @@ export async function runInteractiveRebase(
     // Si se pausó por un conflicto, NO limpiamos: los pasos "exec" pendientes (reword de
     // commits posteriores) todavía necesitan sus ficheros de mensaje cuando se continúe.
     return { success: false, command, output: '', error: extractGitErrorMessage(err) }
+  }
+}
+
+// --- Clonar desde una URL remota ---
+//
+// Deriva un nombre de carpeta a partir de la URL y solo se queda con caracteres
+// seguros: evita que una URL manipulada ("...git/../../algo") escape del
+// directorio de destino fijo (~/GitEdu-Repos).
+function deriveRepoFolderName(remoteUrl: string): string {
+  const lastSegment = remoteUrl.replace(/\.git$/, '').split(/[/\\]/).filter(Boolean).pop() ?? 'repo'
+  const safeName = lastSegment.replace(/[^a-zA-Z0-9._-]/g, '-')
+  return safeName || 'repo'
+}
+
+export async function cloneRepo(remoteUrl: string): Promise<CloneRepoResult> {
+  const destParent = path.join(os.homedir(), 'GitEdu-Repos')
+  const localPath = path.join(destParent, deriveRepoFolderName(remoteUrl))
+  const command = `git clone ${remoteUrl} ${localPath}`
+
+  if (assertGitRepo(localPath) === null) {
+    // Ya se había clonado en una sesión anterior: lo abrimos tal cual, sin volver a clonar.
+    return { success: true, command, localPath, output: 'Ya estaba clonado en local; abriendo el existente.' }
+  }
+
+  try {
+    await fsPromises.mkdir(destParent, { recursive: true })
+    const { stdout, stderr } = await execFileAsync('git', ['clone', remoteUrl, localPath], {
+      maxBuffer: 1024 * 1024 * 10,
+      env: GIT_ENV,
+    })
+    return { success: true, command, localPath, output: stdout || stderr }
+  } catch (err) {
+    return { success: false, command, localPath: '', output: '', error: extractGitErrorMessage(err) }
   }
 }

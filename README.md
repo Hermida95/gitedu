@@ -30,6 +30,7 @@ Most Git GUIs optimize for speed: click, and it's done. That's great once you al
 - **Interactive rebase** — pick / reword / squash / drop commits and reorder them, executed as a single scripted, non-interactive `git rebase -i` (details below).
 - **Conflict resolution panel** — detects an in-progress merge or rebase, lists conflicted files, and lets you resolve via "ours" / "theirs" or mark as resolved after a manual edit, then continue or abort.
 - **Native folder picker**, packaged as a real desktop app via `electron-builder`.
+- **Open a repo by URL** — paste a `https://github.com/...` (or any `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu itself only ever reads/writes local repos; there's no "remote mode".
 
 ## The interesting bit: scripting `git rebase -i` with no terminal
 

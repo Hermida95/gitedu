@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   IPC_CHANNELS,
   type BranchListResult,
+  type CloneRepoResult,
   type CommitGraphData,
   type ConflictState,
   type GitActionResult,
@@ -60,4 +61,6 @@ contextBridge.exposeInMainWorld('gitedu', {
     ipcRenderer.invoke(IPC_CHANNELS.GET_REBASE_COMMITS, repoPath, ontoBranch),
   runInteractiveRebase: (repoPath: string, ontoBranch: string, steps: RebaseStep[]): Promise<GitActionResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.RUN_INTERACTIVE_REBASE, repoPath, ontoBranch, steps),
+
+  cloneRepo: (remoteUrl: string): Promise<CloneRepoResult> => ipcRenderer.invoke(IPC_CHANNELS.CLONE_REPO, remoteUrl),
 })

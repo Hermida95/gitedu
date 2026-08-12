@@ -24,6 +24,8 @@ export const IPC_CHANNELS = {
 
   GET_REBASE_COMMITS: 'git:getRebaseCommits',
   RUN_INTERACTIVE_REBASE: 'git:runInteractiveRebase',
+
+  CLONE_REPO: 'git:cloneRepo',
 } as const
 
 export interface GitLogResult {
@@ -112,5 +114,13 @@ export interface RebaseCommitInfo {
 export interface RebaseCommitsResult {
   success: boolean
   commits: RebaseCommitInfo[]
+  error?: string
+}
+
+export interface CloneRepoResult {
+  success: boolean
+  command: string
+  localPath: string
+  output: string
   error?: string
 }
