@@ -21,18 +21,21 @@ export function CommitNode({ data }: NodeProps) {
     >
       <Handle type="target" position={Position.Top} className="!bg-emerald-500" />
 
-      <div className="mb-1 flex flex-wrap items-center gap-1">
-        <span className="font-mono text-emerald-400">{commit.shortHash}</span>
+      {/* El mensaje es lo que de verdad importa al escanear el historial, así que
+          va primero y con más peso visual que el hash — antes competían por la
+          atención en el orden contrario. */}
+      <p className="truncate text-sm font-semibold text-slate-100" title={commit.message}>
+        {commit.message}
+      </p>
+
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+        <span className="font-mono text-xs text-emerald-400">{commit.shortHash}</span>
         {commit.refs.map((ref) => (
           <span key={ref} className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] text-emerald-300">
             {ref}
           </span>
         ))}
       </div>
-
-      <p className="truncate font-medium" title={commit.message}>
-        {commit.message}
-      </p>
 
       <p className="mt-1 truncate text-[10px] text-slate-400">
         {commit.author} · {new Date(commit.date).toLocaleString()}

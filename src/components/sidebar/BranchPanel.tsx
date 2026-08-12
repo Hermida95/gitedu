@@ -34,7 +34,7 @@ export function BranchPanel({
 
   return (
     <div className="flex flex-col gap-3 border-t border-slate-800 p-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ramas</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Ramas</h3>
 
       <ul className="max-h-40 space-y-0.5 overflow-auto">
         {branches.map((branch) => (
@@ -46,11 +46,11 @@ export function BranchPanel({
           >
             <span className="truncate font-mono" title={branch.name}>
               {branch.name}
-              {branch.isRemote && <span className="ml-1 text-slate-500">(remota)</span>}
+              {branch.isRemote && <span className="ml-1 text-slate-400">(remota)</span>}
             </span>
             {!branch.isCurrent && !branch.isRemote && (
               <button
-                className="shrink-0 rounded border border-slate-700 px-2 py-0.5 hover:bg-slate-700"
+                className="shrink-0 rounded border border-slate-700 px-2 py-1 hover:bg-slate-700"
                 onClick={() => onCheckout(branch.name)}
                 disabled={busy}
               >
@@ -138,7 +138,7 @@ export function BranchPanel({
       </div>
 
       <button
-        className="rounded bg-amber-600 px-3 py-2 text-sm hover:bg-amber-500 disabled:opacity-50"
+        className="rounded bg-amber-700 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
         disabled={busy}
         onClick={onRequestPush}
       >

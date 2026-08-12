@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { GitActionResult, RebaseCommitInfo, RebaseStep, RebaseStepAction } from '../../../shared/ipc-contract'
+import { Modal } from '../Modal'
 
 interface StepRow {
   hash: string
@@ -106,106 +107,111 @@ export function InteractiveRebasePanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-xl">
-        <h2 className="text-base font-bold text-slate-100">Rebase interactivo</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Commits de{' '}
-          <span className="font-mono text-emerald-400">{currentBranch ?? 'la rama actual'}</span> que no están
-          en <span className="font-mono text-emerald-400">{ontoBranch}</span>, del más antiguo al más
-          reciente (el mismo orden que usa <code className="font-mono">git rebase -i</code>).
-        </p>
+    <Modal
+      onClose={executing ? undefined : onClose}
+      labelledBy="interactive-rebase-title"
+      className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-xl"
+    >
+      <h2 id="interactive-rebase-title" className="text-base font-bold text-slate-100">
+        Rebase interactivo
+      </h2>
+      <p className="mt-1 text-sm text-slate-400">
+        Commits de <span className="font-mono text-emerald-400">{currentBranch ?? 'la rama actual'}</span> que
+        no están en <span className="font-mono text-emerald-400">{ontoBranch}</span>, del más antiguo al más
+        reciente (el mismo orden que usa <code className="font-mono">git rebase -i</code>).
+      </p>
 
-        {loadError && <p className="mt-3 text-sm text-red-400">{loadError}</p>}
+      {loadError && <p className="mt-3 text-sm text-red-400">{loadError}</p>}
 
-        {rows && (
-          <div className="mt-3 flex-1 space-y-2 overflow-y-auto">
-            {rows.map((row, index) => (
-              <div key={row.hash} className="rounded border border-slate-700 bg-slate-950 p-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col">
-                    <button
-                      className="text-slate-500 hover:text-slate-200 disabled:opacity-30"
-                      disabled={index === 0}
-                      onClick={() => moveRow(index, -1)}
-                      title="Mover arriba"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      className="text-slate-500 hover:text-slate-200 disabled:opacity-30"
-                      disabled={index === rows.length - 1}
-                      onClick={() => moveRow(index, 1)}
-                      title="Mover abajo"
-                    >
-                      ▼
-                    </button>
-                  </div>
-
-                  <span className="shrink-0 font-mono text-xs text-emerald-400">{row.shortHash}</span>
-
-                  <select
-                    className="shrink-0 rounded border border-slate-700 bg-slate-900 px-1 py-1 text-xs outline-none focus:border-emerald-500"
-                    value={row.action}
-                    onChange={(e) => updateRow(index, { action: e.target.value as RebaseStepAction })}
+      {rows && (
+        <div className="mt-3 flex-1 space-y-2 overflow-y-auto">
+          {rows.map((row, index) => (
+            <div key={row.hash} className="rounded border border-slate-700 bg-slate-950 p-2">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col">
+                  <button
+                    className="rounded px-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-30"
+                    disabled={index === 0}
+                    onClick={() => moveRow(index, -1)}
+                    aria-label={`Mover "${row.originalMessage}" arriba`}
                   >
-                    {(Object.keys(ACTION_LABELS) as RebaseStepAction[])
-                      .filter((action) => action !== 'squash' || index > 0)
-                      .map((action) => (
-                        <option key={action} value={action}>
-                          {ACTION_LABELS[action]}
-                        </option>
-                      ))}
-                  </select>
-
-                  <span className="truncate text-xs text-slate-300" title={row.originalMessage}>
-                    {row.originalMessage}
-                  </span>
+                    ▲
+                  </button>
+                  <button
+                    className="rounded px-1 text-slate-400 hover:bg-slate-800 hover:text-slate-100 disabled:opacity-30"
+                    disabled={index === rows.length - 1}
+                    onClick={() => moveRow(index, 1)}
+                    aria-label={`Mover "${row.originalMessage}" abajo`}
+                  >
+                    ▼
+                  </button>
                 </div>
 
-                {row.action === 'reword' && (
-                  <input
-                    className="mt-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-xs outline-none focus:border-emerald-500"
-                    value={row.message}
-                    onChange={(e) => updateRow(index, { message: e.target.value })}
-                  />
-                )}
+                <span className="shrink-0 font-mono text-xs text-emerald-400">{row.shortHash}</span>
+
+                <select
+                  className="shrink-0 rounded border border-slate-700 bg-slate-900 px-1 py-1.5 text-xs outline-none focus:border-emerald-500"
+                  value={row.action}
+                  onChange={(e) => updateRow(index, { action: e.target.value as RebaseStepAction })}
+                  aria-label={`Acción para el commit "${row.originalMessage}"`}
+                >
+                  {(Object.keys(ACTION_LABELS) as RebaseStepAction[])
+                    .filter((action) => action !== 'squash' || index > 0)
+                    .map((action) => (
+                      <option key={action} value={action}>
+                        {ACTION_LABELS[action]}
+                      </option>
+                    ))}
+                </select>
+
+                <span className="truncate text-xs text-slate-300" title={row.originalMessage}>
+                  {row.originalMessage}
+                </span>
               </div>
-            ))}
-            {rows.length === 0 && (
-              <p className="text-sm text-slate-500">No hay commits que rebasar: las ramas ya coinciden.</p>
-            )}
-          </div>
-        )}
 
-        {rows && rows.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-              Vista previa de la secuencia que se ejecutará
-            </p>
-            <pre className="max-h-32 overflow-auto rounded bg-black p-2 text-[11px] text-emerald-400">
-              {buildTodoPreview(rows)}
-            </pre>
-          </div>
-        )}
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            className="rounded border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 disabled:opacity-50"
-            onClick={onClose}
-            disabled={executing}
-          >
-            Cancelar
-          </button>
-          <button
-            className="rounded bg-amber-600 px-4 py-2 text-sm hover:bg-amber-500 disabled:opacity-50"
-            onClick={handleExecute}
-            disabled={executing || !rows || rows.length === 0}
-          >
-            {executing ? 'Ejecutando...' : 'Ejecutar rebase interactivo'}
-          </button>
+              {row.action === 'reword' && (
+                <input
+                  className="mt-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 font-mono text-xs outline-none focus:border-emerald-500"
+                  value={row.message}
+                  onChange={(e) => updateRow(index, { message: e.target.value })}
+                  aria-label={`Nuevo mensaje para el commit "${row.originalMessage}"`}
+                />
+              )}
+            </div>
+          ))}
+          {rows.length === 0 && (
+            <p className="text-sm text-slate-400">No hay commits que rebasar: las ramas ya coinciden.</p>
+          )}
         </div>
+      )}
+
+      {rows && rows.length > 0 && (
+        <div className="mt-3">
+          <p className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+            Vista previa de la secuencia que se ejecutará
+          </p>
+          <pre className="max-h-32 overflow-auto rounded bg-black p-2 text-[11px] text-emerald-400">
+            {buildTodoPreview(rows)}
+          </pre>
+        </div>
+      )}
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          className="rounded border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800 disabled:opacity-50"
+          onClick={onClose}
+          disabled={executing}
+        >
+          Cancelar
+        </button>
+        <button
+          className="rounded bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+          onClick={handleExecute}
+          disabled={executing || !rows || rows.length === 0}
+        >
+          {executing ? 'Ejecutando...' : 'Ejecutar rebase interactivo'}
+        </button>
       </div>
-    </div>
+    </Modal>
   )
 }

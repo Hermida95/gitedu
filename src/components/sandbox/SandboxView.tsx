@@ -80,11 +80,11 @@ export function SandboxView() {
         <div className="flex flex-col gap-3 p-3">
           <div className="text-sm">
             <span className="font-semibold text-emerald-400">{state.currentBranch}</span>
-            {!currentTip && <span className="ml-2 text-xs text-slate-500">(sin commits todavía)</span>}
+            {!currentTip && <span className="ml-2 text-xs text-slate-400">(sin commits todavía)</span>}
           </div>
 
           <section>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Cambios</h3>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Cambios</h3>
             <button
               className="w-full rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800 disabled:opacity-50"
               disabled={state.hasPendingChange}
@@ -118,21 +118,21 @@ export function SandboxView() {
               onChange={(e) => setCommitMessage(e.target.value)}
             />
             <button
-              className="mt-2 w-full rounded bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
+              className="mt-2 w-full rounded bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
               disabled={!state.staged || !commitMessage.trim()}
               onClick={() => setPendingAction({ type: 'commit', message: commitMessage.trim() })}
             >
               Commit
             </button>
             {!state.staged && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-400">
                 {state.hasPendingChange ? '👆 Pulsa Stage primero.' : 'Simula un cambio primero.'}
               </p>
             )}
           </section>
 
           <section className="border-t border-slate-800 pt-3">
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Ramas</h3>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Ramas</h3>
             <ul className="mb-2 max-h-28 space-y-0.5 overflow-auto">
               {branchNames.map((b) => (
                 <li
@@ -144,7 +144,7 @@ export function SandboxView() {
                   <span className="font-mono">{b}</span>
                   {b !== state.currentBranch && (
                     <button
-                      className="rounded border border-slate-700 px-2 py-0.5 hover:bg-slate-700"
+                      className="rounded border border-slate-700 px-2 py-1 hover:bg-slate-700"
                       onClick={() => setPendingAction({ type: 'checkoutBranch', name: b })}
                     >
                       Checkout
@@ -209,10 +209,10 @@ export function SandboxView() {
           </section>
 
           <section className="border-t border-slate-800 pt-3">
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
               Remoto (simulado)
             </h3>
-            <p className="mb-2 text-xs text-slate-500">
+            <p className="mb-2 text-xs text-slate-400">
               {localOrigin === currentTip
                 ? 'Tu rama y origin están al día.'
                 : localOrigin
@@ -236,7 +236,7 @@ export function SandboxView() {
               </button>
             </div>
             <button
-              className="mt-2 w-full rounded bg-amber-600 px-3 py-2 text-sm hover:bg-amber-500 disabled:opacity-50"
+              className="mt-2 w-full rounded bg-amber-700 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
               disabled={!currentTip}
               onClick={() => setPendingAction({ type: 'push' })}
             >

@@ -20,7 +20,7 @@ export function StashPanel({
 
   return (
     <div className="flex flex-col gap-2 border-t border-slate-800 p-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stash ({stashes.length})</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Stash ({stashes.length})</h3>
 
       <ul className="max-h-32 space-y-1 overflow-auto">
         {stashes.map((s) => (
@@ -30,14 +30,14 @@ export function StashPanel({
             </p>
             <div className="mt-1 flex gap-1">
               <button
-                className="flex-1 rounded border border-slate-700 px-1.5 py-0.5 hover:bg-slate-700 disabled:opacity-50"
+                className="flex-1 rounded border border-slate-700 px-1.5 py-1 hover:bg-slate-700 disabled:opacity-50"
                 disabled={busy}
                 onClick={() => onRequestStashPop(s.index, s.message)}
               >
                 Recuperar
               </button>
               <button
-                className="flex-1 rounded border border-red-900 text-red-300 px-1.5 py-0.5 hover:bg-red-950 disabled:opacity-50"
+                className="flex-1 rounded border border-red-900 text-red-300 px-1.5 py-1 hover:bg-red-950 disabled:opacity-50"
                 disabled={busy}
                 onClick={() => onRequestStashDrop(s.index, s.message)}
               >
@@ -46,7 +46,7 @@ export function StashPanel({
             </div>
           </li>
         ))}
-        {stashes.length === 0 && <p className="px-1 text-xs text-slate-600">No hay stashes guardados.</p>}
+        {stashes.length === 0 && <p className="px-1 text-xs text-slate-400">No hay stashes guardados.</p>}
       </ul>
 
       <div className="flex gap-2">

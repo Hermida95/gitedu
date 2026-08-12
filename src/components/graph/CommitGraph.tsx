@@ -48,7 +48,7 @@ export function CommitGraph({ commits, highlightRefs = [] }: CommitGraphProps) {
 
   if (commits.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-slate-500">
+      <div className="flex h-full items-center justify-center text-sm text-slate-400">
         Sin commits que mostrar.
       </div>
     )

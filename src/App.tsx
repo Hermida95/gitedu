@@ -245,13 +245,13 @@ function App() {
 
           <div className="flex rounded border border-slate-700 text-xs">
             <button
-              className={`px-3 py-1 ${mode === 'real' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`px-3 py-1 ${mode === 'real' ? 'bg-emerald-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
               onClick={() => setMode('real')}
             >
               Repositorio real
             </button>
             <button
-              className={`px-3 py-1 ${mode === 'sandbox' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+              className={`px-3 py-1 ${mode === 'sandbox' ? 'bg-amber-700 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
               onClick={() => setMode('sandbox')}
             >
               Modo aprendizaje
@@ -285,7 +285,7 @@ function App() {
                 Examinar...
               </button>
               <button
-                className="rounded bg-emerald-600 px-4 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
+                className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
                 onClick={() => loadOrClone(repoPath)}
                 disabled={loading || !repoPath}
               >
@@ -294,7 +294,7 @@ function App() {
             </div>
 
             {isRemoteUrl(repoPath) && !loading && (
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-slate-400">
                 Se clonará en <code className="font-mono">~/GitEdu-Repos/</code> y luego se cargará desde ahí.
               </p>
             )}

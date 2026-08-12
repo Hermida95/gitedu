@@ -21,7 +21,7 @@ function FileRow({ file, onToggle, onViewDiff }: { file: FileStatus; onToggle: (
         {file.path}
       </button>
       <button
-        className="shrink-0 rounded border border-slate-700 px-2 py-0.5 text-slate-300 hover:bg-slate-700"
+        className="shrink-0 rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-700"
         onClick={onToggle}
       >
         {file.status === 'staged' ? 'Unstage' : 'Stage'}
@@ -34,7 +34,7 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
   const [message, setMessage] = useState('')
 
   if (!status) {
-    return <p className="p-3 text-sm text-slate-500">Carga un repositorio para ver su estado.</p>
+    return <p className="p-3 text-sm text-slate-400">Carga un repositorio para ver su estado.</p>
   }
 
   const staged = status.files.filter((f) => f.status === 'staged')
@@ -46,7 +46,7 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
       <div className="text-sm">
         <span className="font-semibold text-emerald-400">{status.branch ?? 'HEAD desacoplado'}</span>
         {status.upstream && (
-          <span className="ml-2 text-xs text-slate-500">
+          <span className="ml-2 text-xs text-slate-400">
             {status.upstream}
             {status.ahead > 0 && ` · ${status.ahead} por subir`}
             {status.behind > 0 && ` · ${status.behind} por bajar`}
@@ -55,19 +55,19 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
       </div>
 
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
           Staged ({staged.length})
         </h3>
         <ul className="space-y-0.5">
           {staged.map((f) => (
             <FileRow key={f.path} file={f} onToggle={() => onUnstage(f.path)} onViewDiff={() => onViewDiff(f)} />
           ))}
-          {staged.length === 0 && <p className="px-2 text-xs text-slate-600">Nada preparado para commit.</p>}
+          {staged.length === 0 && <p className="px-2 text-xs text-slate-400">Nada preparado para commit.</p>}
         </ul>
       </section>
 
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
           Sin stage ({unstaged.length + untracked.length})
         </h3>
         <ul className="space-y-0.5">
@@ -75,7 +75,7 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
             <FileRow key={f.path} file={f} onToggle={() => onStage(f.path)} onViewDiff={() => onViewDiff(f)} />
           ))}
           {unstaged.length + untracked.length === 0 && (
-            <p className="px-2 text-xs text-slate-600">Directorio de trabajo limpio.</p>
+            <p className="px-2 text-xs text-slate-400">Directorio de trabajo limpio.</p>
           )}
         </ul>
       </section>
@@ -89,7 +89,7 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
           onChange={(e) => setMessage(e.target.value)}
         />
         <button
-          className="mt-2 w-full rounded bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
+          className="mt-2 w-full rounded bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
           disabled={busy || !message.trim() || staged.length === 0}
           onClick={() => onRequestCommit(message.trim())}
         >
@@ -102,7 +102,7 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
           </p>
         )}
         {staged.length === 0 && unstaged.length + untracked.length === 0 && (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             No hay cambios que commitear todavía. Edita algún fichero del repo (con tu editor de siempre) y
             vuelve aquí.
           </p>
