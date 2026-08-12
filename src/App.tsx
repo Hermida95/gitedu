@@ -18,10 +18,12 @@ import { InteractiveRebasePanel } from './components/rebase/InteractiveRebasePan
 import { DiffViewerModal } from './components/diff/DiffViewerModal'
 import { CommandLog, type LastCommand } from './components/CommandLog'
 import { buildCommandPreview, type GitAction } from './lib/gitCommandPreview'
+import { SandboxView } from './components/sandbox/SandboxView'
 
 const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
 
 function App() {
+  const [mode, setMode] = useState<'real' | 'sandbox'>('real')
   const [repoPath, setRepoPath] = useState('')
   const [activeRepoPath, setActiveRepoPath] = useState('')
   const [commits, setCommits] = useState<Commit[]>([])
@@ -238,9 +240,25 @@ function App() {
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800 p-4">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex items-center gap-3">
           <h1 className="text-lg font-bold">GitEdu</h1>
-          {watching && (
+
+          <div className="flex rounded border border-slate-700 text-xs">
+            <button
+              className={`px-3 py-1 ${mode === 'real' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+              onClick={() => setMode('real')}
+            >
+              Repositorio real
+            </button>
+            <button
+              className={`px-3 py-1 ${mode === 'sandbox' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}
+              onClick={() => setMode('sandbox')}
+            >
+              Modo aprendizaje
+            </button>
+          </div>
+
+          {mode === 'real' && watching && (
             <span
               className="flex items-center gap-1 rounded-full bg-emerald-900/40 px-2 py-0.5 text-[10px] text-emerald-300"
               title="GitEdu está vigilando este repositorio: si cambias algo desde la terminal, se recargará solo."
@@ -250,105 +268,120 @@ function App() {
           )}
         </div>
 
-        <div className="flex gap-2">
-          <input
-            className="flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-sm outline-none focus:border-emerald-500"
-            placeholder="/ruta/al/repositorio o https://github.com/usuario/repo"
-            value={repoPath}
-            onChange={(e) => setRepoPath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && loadOrClone(repoPath)}
-          />
-          <button
-            className="rounded border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800"
-            onClick={handleBrowse}
-          >
-            Examinar...
-          </button>
-          <button
-            className="rounded bg-emerald-600 px-4 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
-            onClick={() => loadOrClone(repoPath)}
-            disabled={loading || !repoPath}
-          >
-            {loading ? 'Cargando...' : isRemoteUrl(repoPath) ? 'Clonar y cargar' : 'Cargar grafo'}
-          </button>
-        </div>
-
-        {isRemoteUrl(repoPath) && !loading && (
-          <p className="mt-2 text-xs text-slate-500">
-            Se clonará en <code className="font-mono">~/GitEdu-Repos/</code> y luego se cargará desde ahí.
-          </p>
-        )}
-
-        {error && (
-          <div className="mt-2 flex items-center gap-3">
-            <p className="text-sm text-red-400">{error}</p>
-            {!isRemoteUrl(repoPath) && repoPath && (
+        {mode === 'real' && (
+          <>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 rounded border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-sm outline-none focus:border-emerald-500"
+                placeholder="/ruta/al/repositorio o https://github.com/usuario/repo"
+                value={repoPath}
+                onChange={(e) => setRepoPath(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && loadOrClone(repoPath)}
+              />
               <button
-                className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800"
-                onClick={() => requestAction({ type: 'initRepo', folderPath: repoPath })}
+                className="rounded border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800"
+                onClick={handleBrowse}
               >
-                Inicializar repositorio Git aquí
+                Examinar...
               </button>
+              <button
+                className="rounded bg-emerald-600 px-4 py-2 text-sm hover:bg-emerald-500 disabled:opacity-50"
+                onClick={() => loadOrClone(repoPath)}
+                disabled={loading || !repoPath}
+              >
+                {loading ? 'Cargando...' : isRemoteUrl(repoPath) ? 'Clonar y cargar' : 'Cargar grafo'}
+              </button>
+            </div>
+
+            {isRemoteUrl(repoPath) && !loading && (
+              <p className="mt-2 text-xs text-slate-500">
+                Se clonará en <code className="font-mono">~/GitEdu-Repos/</code> y luego se cargará desde ahí.
+              </p>
             )}
-          </div>
+
+            {error && (
+              <div className="mt-2 flex items-center gap-3">
+                <p className="text-sm text-red-400">{error}</p>
+                {!isRemoteUrl(repoPath) && repoPath && (
+                  <button
+                    className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800"
+                    onClick={() => requestAction({ type: 'initRepo', folderPath: repoPath })}
+                  >
+                    Inicializar repositorio Git aquí
+                  </button>
+                )}
+              </div>
+            )}
+
+            {rawOutput && (
+              <div className="mt-2">
+                <button
+                  className="text-xs text-slate-400 underline hover:text-slate-200"
+                  onClick={() => setShowRaw((v) => !v)}
+                >
+                  {showRaw ? 'Ocultar' : 'Ver'} comando ejecutado:{' '}
+                  <code className="font-mono">git log --oneline --graph --all --decorate</code>
+                </button>
+                {showRaw && (
+                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-black p-3 text-xs">{rawOutput}</pre>
+                )}
+              </div>
+            )}
+          </>
         )}
 
-        {rawOutput && (
-          <div className="mt-2">
-            <button
-              className="text-xs text-slate-400 underline hover:text-slate-200"
-              onClick={() => setShowRaw((v) => !v)}
-            >
-              {showRaw ? 'Ocultar' : 'Ver'} comando ejecutado:{' '}
-              <code className="font-mono">git log --oneline --graph --all --decorate</code>
-            </button>
-            {showRaw && (
-              <pre className="mt-2 max-h-40 overflow-auto rounded bg-black p-3 text-xs">{rawOutput}</pre>
-            )}
-          </div>
+        {mode === 'sandbox' && (
+          <p className="text-sm text-slate-400">
+            Practica commits, ramas, merge, rebase, fetch y pull sobre un repositorio de mentira — sin clonar
+            ni tocar nada real.
+          </p>
         )}
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-800">
-          <StatusPanel
-            key={resetToken}
-            status={status}
-            onStage={(filePath) => runImmediate(() => window.gitedu.stageFile(repoPath, filePath))}
-            onUnstage={(filePath) => runImmediate(() => window.gitedu.unstageFile(repoPath, filePath))}
-            onViewDiff={(file) => setDiffTarget(file)}
-            onRequestCommit={(message) => requestAction({ type: 'commit', message })}
-            busy={actionLoading}
-          />
-          <BranchPanel
-            branches={branches}
-            onCheckout={(name) => requestAction({ type: 'checkoutBranch', name })}
-            onCreateBranch={(name) => requestAction({ type: 'createBranch', name })}
-            onRequestMerge={(branchName) =>
-              requestAction({ type: 'mergeBranch', branchName, currentBranch: currentBranchName })
-            }
-            onRequestRebase={(ontoBranch) =>
-              requestAction({ type: 'rebaseBranch', ontoBranch, currentBranch: currentBranchName })
-            }
-            onOpenInteractiveRebase={(ontoBranch) => setInteractiveRebaseTarget(ontoBranch)}
-            onRequestPush={() => requestAction({ type: 'push' })}
-            onRequestFetch={() => requestAction({ type: 'fetch' })}
-            onRequestPull={() => requestAction({ type: 'pull' })}
-            busy={actionLoading}
-          />
-          <StashPanel
-            stashes={stashes}
-            onRequestStashSave={(message) => requestAction({ type: 'stashSave', message })}
-            onRequestStashPop={(index, stashMessage) => requestAction({ type: 'stashPop', index, stashMessage })}
-            onRequestStashDrop={(index, stashMessage) => requestAction({ type: 'stashDrop', index, stashMessage })}
-            busy={actionLoading}
-          />
-        </aside>
+      {mode === 'sandbox' ? (
+        <SandboxView />
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-800">
+            <StatusPanel
+              key={resetToken}
+              status={status}
+              onStage={(filePath) => runImmediate(() => window.gitedu.stageFile(repoPath, filePath))}
+              onUnstage={(filePath) => runImmediate(() => window.gitedu.unstageFile(repoPath, filePath))}
+              onViewDiff={(file) => setDiffTarget(file)}
+              onRequestCommit={(message) => requestAction({ type: 'commit', message })}
+              busy={actionLoading}
+            />
+            <BranchPanel
+              branches={branches}
+              onCheckout={(name) => requestAction({ type: 'checkoutBranch', name })}
+              onCreateBranch={(name) => requestAction({ type: 'createBranch', name })}
+              onRequestMerge={(branchName) =>
+                requestAction({ type: 'mergeBranch', branchName, currentBranch: currentBranchName })
+              }
+              onRequestRebase={(ontoBranch) =>
+                requestAction({ type: 'rebaseBranch', ontoBranch, currentBranch: currentBranchName })
+              }
+              onOpenInteractiveRebase={(ontoBranch) => setInteractiveRebaseTarget(ontoBranch)}
+              onRequestPush={() => requestAction({ type: 'push' })}
+              onRequestFetch={() => requestAction({ type: 'fetch' })}
+              onRequestPull={() => requestAction({ type: 'pull' })}
+              busy={actionLoading}
+            />
+            <StashPanel
+              stashes={stashes}
+              onRequestStashSave={(message) => requestAction({ type: 'stashSave', message })}
+              onRequestStashPop={(index, stashMessage) => requestAction({ type: 'stashPop', index, stashMessage })}
+              onRequestStashDrop={(index, stashMessage) => requestAction({ type: 'stashDrop', index, stashMessage })}
+              busy={actionLoading}
+            />
+          </aside>
 
-        <main className="flex-1">
-          <CommitGraph commits={commits} highlightRefs={highlightRefs} />
-        </main>
-      </div>
+          <main className="flex-1">
+            <CommitGraph commits={commits} highlightRefs={highlightRefs} />
+          </main>
+        </div>
+      )}
 
       <CommandLog entry={lastCommand} />
 
