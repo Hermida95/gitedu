@@ -1,0 +1,174 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import fsPromises from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import type { GitActionResult, RebaseStep } from '../../shared/ipc-contract'
+import { GIT_ENV, assertGitRepo, extractGitErrorMessage } from './gitService'
+
+const execFileAsync = promisify(execFile)
+
+function formatCommand(args: string[]): string {
+  return ['git', ...args].join(' ')
+}
+
+async function runGit(repoPath: string, args: string[]): Promise<GitActionResult> {
+  const command = formatCommand(args)
+  const invalidRepoError = assertGitRepo(repoPath)
+  if (invalidRepoError) {
+    return { success: false, command, output: '', error: invalidRepoError }
+  }
+
+  try {
+    // execFile (no exec/shell): los args (mensajes de commit, nombres de rama...) nunca pasan por un shell.
+    const { stdout, stderr } = await execFileAsync('git', args, {
+      cwd: repoPath,
+      maxBuffer: 1024 * 1024 * 10,
+      env: GIT_ENV,
+    })
+    return { success: true, command, output: stdout || stderr }
+  } catch (err) {
+    const message = extractGitErrorMessage(err)
+    return { success: false, command, output: '', error: message }
+  }
+}
+
+export const stageFile = (repoPath: string, filePath: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['add', '--', filePath])
+
+export const unstageFile = (repoPath: string, filePath: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['restore', '--staged', '--', filePath])
+
+export const commitChanges = (repoPath: string, message: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['commit', '-m', message])
+
+// '--' delimita opciones de argumentos: sin él, un nombre de rama que empiece
+// por '-' (input libre del usuario) podría interpretarse como un flag de git.
+export const createBranch = (repoPath: string, name: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['branch', '--', name])
+
+export const checkoutBranch = (repoPath: string, name: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['checkout', name])
+
+export const mergeBranch = (repoPath: string, branchName: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['merge', '--no-edit', branchName])
+
+export const rebaseBranch = (repoPath: string, ontoBranch: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['rebase', ontoBranch])
+
+export const pushBranch = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['push'])
+
+// --- Resolución de conflictos (merge y rebase comparten los mismos comandos) ---
+
+export const resolveConflictOurs = async (repoPath: string, filePath: string): Promise<GitActionResult> => {
+  const checkout = await runGit(repoPath, ['checkout', '--ours', '--', filePath])
+  if (!checkout.success) return checkout
+  return runGit(repoPath, ['add', '--', filePath])
+}
+
+export const resolveConflictTheirs = async (repoPath: string, filePath: string): Promise<GitActionResult> => {
+  const checkout = await runGit(repoPath, ['checkout', '--theirs', '--', filePath])
+  if (!checkout.success) return checkout
+  return runGit(repoPath, ['add', '--', filePath])
+}
+
+// Para cuando el usuario ha editado el fichero a mano fuera de la app y ya lo dejó como quería.
+export const markConflictResolved = (repoPath: string, filePath: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['add', '--', filePath])
+
+export const continueMerge = (repoPath: string): Promise<GitActionResult> =>
+  runGit(repoPath, ['commit', '--no-edit'])
+
+export const abortMerge = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['merge', '--abort'])
+
+export const continueRebase = async (repoPath: string): Promise<GitActionResult> => {
+  const result = await runGit(repoPath, ['rebase', '--continue'])
+  if (result.success) await cleanupRebaseTmpDir(repoPath)
+  return result
+}
+
+export const abortRebase = async (repoPath: string): Promise<GitActionResult> => {
+  const result = await runGit(repoPath, ['rebase', '--abort'])
+  if (result.success) await cleanupRebaseTmpDir(repoPath)
+  return result
+}
+
+// --- Rebase interactivo ---
+//
+// git rebase -i normalmente abre un editor para que la persona escriba la secuencia
+// pick/squash/drop/reword. Aquí no hay terminal: en su lugar generamos nosotros mismos
+// el fichero de secuencia y usamos GIT_SEQUENCE_EDITOR como un simple "cp" que lo copia
+// sobre el fichero que git espera editar. Es la misma técnica que usan varias
+// herramientas de automatización de git para scriptar rebases interactivos.
+//
+// El "reword" se resuelve sin editor añadiendo una línea `exec git commit --amend -F <fichero>`
+// justo después del pick: -F lee el mensaje de un fichero, así que el contenido del mensaje
+// nunca pasa por el shell (evita que un mensaje con comillas o `;` se interprete como comando).
+
+const REBASE_MARKER_REL_PATH = path.join('.git', 'gitedu-rebase-tmpdir')
+
+async function cleanupRebaseTmpDir(repoPath: string): Promise<void> {
+  const markerPath = path.join(repoPath, REBASE_MARKER_REL_PATH)
+  try {
+    const tmpDir = (await fsPromises.readFile(markerPath, 'utf8')).trim()
+    if (tmpDir) await fsPromises.rm(tmpDir, { recursive: true, force: true })
+    await fsPromises.rm(markerPath, { force: true })
+  } catch {
+    // No había un rebase interactivo de GitEdu en curso (o ya se limpió); no hay nada que hacer.
+  }
+}
+
+export async function runInteractiveRebase(
+  repoPath: string,
+  ontoBranch: string,
+  steps: RebaseStep[]
+): Promise<GitActionResult> {
+  const command = `git rebase -i ${ontoBranch}`
+  const invalidRepoError = assertGitRepo(repoPath)
+  if (invalidRepoError) {
+    return { success: false, command, output: '', error: invalidRepoError }
+  }
+
+  const tmpDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'gitedu-rebase-'))
+  await fsPromises.writeFile(path.join(repoPath, REBASE_MARKER_REL_PATH), tmpDir, 'utf8')
+
+  try {
+    const todoLines: string[] = []
+    for (const step of steps) {
+      if (step.action === 'drop') {
+        todoLines.push(`drop ${step.hash}`)
+        continue
+      }
+      if (step.action === 'squash') {
+        // "fixup" en vez de "squash": combina el commit sin pedir un editor para
+        // fusionar los mensajes (se queda con el mensaje del commit anterior).
+        todoLines.push(`fixup ${step.hash}`)
+        continue
+      }
+
+      todoLines.push(`pick ${step.hash}`)
+      if (step.action === 'reword' && step.message) {
+        const msgFile = path.join(tmpDir, `msg-${step.hash}.txt`)
+        await fsPromises.writeFile(msgFile, step.message, 'utf8')
+        todoLines.push(`exec git commit --amend -F "${msgFile}"`)
+      }
+    }
+
+    const todoFile = path.join(tmpDir, 'todo.txt')
+    await fsPromises.writeFile(todoFile, todoLines.join('\n') + '\n', 'utf8')
+
+    const { stdout, stderr } = await execFileAsync('git', ['rebase', '-i', ontoBranch], {
+      cwd: repoPath,
+      maxBuffer: 1024 * 1024 * 10,
+      env: { ...GIT_ENV, GIT_SEQUENCE_EDITOR: `cp "${todoFile}"` },
+    })
+
+    // Terminó sin pausas (no hubo conflictos): ya no hace falta el directorio temporal.
+    await cleanupRebaseTmpDir(repoPath)
+    return { success: true, command, output: stdout || stderr }
+  } catch (err) {
+    // Si se pausó por un conflicto, NO limpiamos: los pasos "exec" pendientes (reword de
+    // commits posteriores) todavía necesitan sus ficheros de mensaje cuando se continúe.
+    return { success: false, command, output: '', error: extractGitErrorMessage(err) }
+  }
+}
