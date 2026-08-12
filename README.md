@@ -129,6 +129,7 @@ Being upfront about scope, since this was built to learn and to show real, worki
 - No inline 3-way diff/merge editor — conflicts are resolved via "ours"/"theirs" or by editing the file externally and marking it resolved.
 - Interactive rebase covers pick/reword/squash/drop/reorder, not the full range of `git rebase -i` (no `edit` pauses, no `exec` steps beyond the internal reword mechanism).
 - No code signing configured for the packaged app — `npm run dist` produces an unsigned build.
+- No filesystem watcher — the graph only refreshes when you click "Cargar grafo" or right after an action run *through GitEdu itself*. If you `git commit` from a terminal (or another tool) while a repo is open, GitEdu won't notice until you reload it manually.
 
 ## License
 
