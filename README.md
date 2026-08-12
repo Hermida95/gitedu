@@ -71,18 +71,38 @@ Every git invocation goes through `execFile` with an argument array — never a 
 
 Electron · TypeScript · React · Tailwind CSS v4 · React Flow · dagre · electron-vite · electron-builder
 
-## Getting started
+## Running GitEdu
+
+GitEdu is a **desktop app**, not a website — there's no server to visit at `localhost`, no hosted version. You either run it from source or build a standalone app and double-click it, exactly like any other desktop program.
+
+Either way you need [Node.js](https://nodejs.org/) 18+ and `git` itself installed and on your `PATH`.
+
+### Option A — run from source (fastest way to try it, or to hack on the code)
 
 ```bash
+git clone https://github.com/Hermida95/gitedu.git
+cd gitedu
 npm install
-npm run dev       # launches the app with hot reload
+npm run dev
 ```
 
+A real Electron window opens with hot reload. This is what you want if you're reading the code alongside using it, or contributing.
+
+### Option B — build a standalone app to just double-click
+
 ```bash
-npm run build      # type-check + production bundle
-npm run package    # unpacked app in release/ (fast, for local testing)
-npm run dist        # full installer for your platform
+npm run dist
 ```
+
+This produces a real installer/app for your OS in `release/` (`.dmg`/`.app` on macOS, `.exe`/NSIS installer on Windows, `.AppImage` on Linux) — something you (or anyone) can install without ever touching a terminal again afterwards.
+
+**macOS note:** this build isn't code-signed (that needs a paid Apple Developer account), so Gatekeeper will refuse to open it with "GitEdu is damaged and can't be opened" the first time. That's not actually true — it's just unsigned. To open it anyway: right-click the app → **Open** → **Open** again in the dialog, *or* run:
+
+```bash
+xattr -cr "/path/to/GitEdu.app"
+```
+
+`npm run package` (no `--` needed) does the same build but skips zipping/installer creation — faster, useful for testing packaging locally without producing a distributable file.
 
 ## Capturing screenshots
 
