@@ -8,11 +8,19 @@ import { IPC_CHANNELS } from '../../../shared/ipc-contract'
 let activeWatcher: fs.FSWatcher | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
+// Se llama al cerrar la ventana: si no, el watcher (y su timer pendiente) sigue
+// vivo sin nadie escuchando, y cuando el timer dispara intenta usar una ventana
+// ya destruida -> "TypeError: Object has been destroyed" sin capturar.
+export function stopWatcher(): void {
+  activeWatcher?.close()
+  activeWatcher = null
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = null
+}
+
 export function registerWatcherHandlers(getWindow: () => BrowserWindow | null): void {
   ipcMain.handle(IPC_CHANNELS.WATCH_REPO, (_event, repoPath: string): boolean => {
-    activeWatcher?.close()
-    activeWatcher = null
-    if (debounceTimer) clearTimeout(debounceTimer)
+    stopWatcher()
 
     const gitDir = path.join(repoPath, '.git')
     if (!fs.existsSync(gitDir)) return false
@@ -23,7 +31,12 @@ export function registerWatcherHandlers(getWindow: () => BrowserWindow | null): 
       activeWatcher = fs.watch(gitDir, { recursive: true }, () => {
         if (debounceTimer) clearTimeout(debounceTimer)
         debounceTimer = setTimeout(() => {
-          getWindow()?.webContents.send(IPC_CHANNELS.REPO_CHANGED_EVENT)
+          // isDestroyed(): defensa extra además de anular mainWindow al cerrarla —
+          // por si en el futuro hay más de una ventana con ciclos de vida propios.
+          const win = getWindow()
+          if (win && !win.isDestroyed()) {
+            win.webContents.send(IPC_CHANNELS.REPO_CHANGED_EVENT)
+          }
         }, 400)
       })
       return true

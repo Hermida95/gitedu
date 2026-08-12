@@ -3,7 +3,7 @@ import path from 'node:path'
 import { registerGitHandlers } from './ipc/gitHandlers'
 import { registerGitActionHandlers } from './ipc/gitActionHandlers'
 import { registerDialogHandlers } from './ipc/dialogHandlers'
-import { registerWatcherHandlers } from './ipc/watcherHandlers'
+import { registerWatcherHandlers, stopWatcher } from './ipc/watcherHandlers'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -17,6 +17,14 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
     },
+  })
+
+  // Sin esto, mainWindow se queda apuntando a una ventana ya destruida tras
+  // cerrarla, y cualquier código que la use luego (p.ej. el watcher) revienta
+  // con "Object has been destroyed" en vez de simplemente no hacer nada.
+  mainWindow.on('closed', () => {
+    stopWatcher()
+    mainWindow = null
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
