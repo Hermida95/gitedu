@@ -6,6 +6,8 @@ A desktop app that visualizes local Git repositories as an interactive commit gr
 
 **[⬇ Download the latest release (macOS)](https://github.com/Hermida95/gitedu/releases/latest)** — unsigned build, see [Running GitEdu](#running-gitedu) below for the one-time Gatekeeper workaround.
 
+📖 [Guía de uso en español](docs/GUIA-DE-USO.md) (plain-language walkthrough, in Spanish).
+
 <!--
   Drop your own screenshots here (see "Capturing screenshots" below) and
   uncomment these lines. Recommended shots, in this order:
