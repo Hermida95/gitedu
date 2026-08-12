@@ -117,16 +117,20 @@ xattr -cr "/path/to/GitEdu.app"
 
 ## Capturing screenshots
 
+The fastest way — no need to find or set up a real repo with the right branch shape:
+
 ```bash
 npm run dev
 ```
 
-Open any local repo (ideally one with a branch and a merge, so the graph has something to show), then capture:
+Switch to **Modo aprendizaje** and follow the guided lessons for a couple of steps (first commit, create a branch, a second commit, merge) — that alone gives you a graph with a real two-parent merge commit and branch badges to screenshot, and the command preview modal is one click away from any lesson step.
 
-1. The main window with the graph loaded.
-2. The command preview modal — trigger it from a merge or rebase button.
-3. The interactive rebase panel — "Rebase interactivo sobre..." in the branch panel.
-4. The conflict panel — easiest to trigger by merging two branches that touch the same line of the same file.
+Recommended shots:
+
+1. The main window with a populated graph (a couple of steps into a guided lesson).
+2. The command preview modal — trigger it from any commit/branch/merge button.
+3. The interactive rebase panel — only available in real mode, "Rebase interactivo sobre..." in the branch panel, needs an actual repo with at least two commits on a branch.
+4. The conflict panel — also real-mode only; easiest to trigger by merging two branches that touch the same line of the same file.
 
 Save them into `docs/screenshots/` and uncomment the image block at the top of this file.
 
