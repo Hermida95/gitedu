@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('gitedu', {
     ipcRenderer.invoke(IPC_CHANNELS.RUN_INTERACTIVE_REBASE, repoPath, ontoBranch, steps),
 
   cloneRepo: (remoteUrl: string): Promise<CloneRepoResult> => ipcRenderer.invoke(IPC_CHANNELS.CLONE_REPO, remoteUrl),
+  initRepo: (folderPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.INIT_REPO, folderPath),
 
   fetch: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.FETCH, repoPath),
   pull: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.PULL, repoPath),

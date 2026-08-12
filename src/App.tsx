@@ -181,6 +181,9 @@ function App() {
       case 'stashDrop':
         result = await window.gitedu.stashDrop(repoPath, pendingAction.index)
         break
+      case 'initRepo':
+        result = await window.gitedu.initRepo(pendingAction.folderPath)
+        break
     }
 
     setLastCommand({ command: result.command, success: result.success, error: result.error })
@@ -276,7 +279,19 @@ function App() {
           </p>
         )}
 
-        {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+        {error && (
+          <div className="mt-2 flex items-center gap-3">
+            <p className="text-sm text-red-400">{error}</p>
+            {!isRemoteUrl(repoPath) && repoPath && (
+              <button
+                className="shrink-0 rounded border border-slate-700 px-2 py-1 text-xs hover:bg-slate-800"
+                onClick={() => requestAction({ type: 'initRepo', folderPath: repoPath })}
+              >
+                Inicializar repositorio Git aquí
+              </button>
+            )}
+          </div>
+        )}
 
         {rawOutput && (
           <div className="mt-2">

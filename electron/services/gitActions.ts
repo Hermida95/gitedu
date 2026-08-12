@@ -33,6 +33,25 @@ async function runGit(repoPath: string, args: string[]): Promise<GitActionResult
   }
 }
 
+// A diferencia de runGit, esta NO exige que ya exista un .git — es precisamente
+// para el caso contrario: una carpeta normal que todavía no es un repositorio.
+export async function initRepo(folderPath: string): Promise<GitActionResult> {
+  const command = 'git init'
+
+  try {
+    await fsPromises.access(folderPath)
+  } catch {
+    return { success: false, command, output: '', error: `"${folderPath}" no existe.` }
+  }
+
+  try {
+    const { stdout, stderr } = await execFileAsync('git', ['init'], { cwd: folderPath, env: GIT_ENV })
+    return { success: true, command, output: stdout || stderr }
+  } catch (err) {
+    return { success: false, command, output: '', error: extractGitErrorMessage(err) }
+  }
+}
+
 export const stageFile = (repoPath: string, filePath: string): Promise<GitActionResult> =>
   runGit(repoPath, ['add', '--', filePath])
 

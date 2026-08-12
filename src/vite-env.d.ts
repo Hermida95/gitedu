@@ -47,6 +47,7 @@ declare global {
       runInteractiveRebase: (repoPath: string, ontoBranch: string, steps: RebaseStep[]) => Promise<GitActionResult>
 
       cloneRepo: (remoteUrl: string) => Promise<CloneRepoResult>
+      initRepo: (folderPath: string) => Promise<GitActionResult>
 
       fetch: (repoPath: string) => Promise<GitActionResult>
       pull: (repoPath: string) => Promise<GitActionResult>

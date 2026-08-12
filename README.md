@@ -35,6 +35,7 @@ Most Git GUIs optimize for speed: click, and it's done. That's great once you al
 - **Live refresh** — watches the repo's `.git` directory; if you run a git command from a terminal (or another tool) while GitEdu has that repo open, it notices and reloads on its own. A small "en vivo" badge next to the title shows when this is active.
 - **Native folder picker**, packaged as a real desktop app via `electron-builder`.
 - **Open a repo by URL** — paste a `https://github.com/...` (or any `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu itself only ever reads/writes local repos; there's no "remote mode".
+- **Initialize a fresh repo** — point GitEdu at a plain folder that isn't a git repo yet, and it offers to run `git init` right there instead of just failing.
 
 ## The interesting bit: scripting `git rebase -i` with no terminal
 

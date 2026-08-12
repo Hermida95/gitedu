@@ -10,6 +10,7 @@ export type GitAction =
   | { type: 'stashSave'; message: string }
   | { type: 'stashPop'; index: number; stashMessage: string }
   | { type: 'stashDrop'; index: number; stashMessage: string }
+  | { type: 'initRepo'; folderPath: string }
 
 export interface CommandPreview {
   title: string
@@ -151,6 +152,18 @@ export function buildCommandPreview(action: GitAction): CommandPreview {
         description: `Elimina permanentemente el stash "${action.stashMessage}" sin aplicarlo.`,
         impact: ['Ese conjunto de cambios se pierde para siempre.'],
         danger: true,
+      }
+
+    case 'initRepo':
+      return {
+        title: 'Inicializar repositorio',
+        command: 'git init',
+        description: `Convierte "${action.folderPath}" en un repositorio Git: crea dentro una carpeta oculta .git donde se guardará todo el historial. No toca ni borra ningún fichero existente.`,
+        impact: [
+          'Aparecerá una carpeta .git (oculta) dentro de esa carpeta.',
+          'Todavía no habrá ningún commit — el grafo estará vacío hasta que hagas el primero.',
+        ],
+        danger: false,
       }
   }
 }

@@ -35,8 +35,9 @@ Y ahora GitEdu **sí se entera sola**: si ves el indicador verde "en vivo" junto
 
 Tienes dos formas, en el campo de arriba de la ventana:
 
-- **Ya lo tienes en el ordenador:** escribe la ruta (ej. `/Users/miguel/Developer/rehab`) o pulsa "Examinar..." y búscalo con el explorador de carpetas.
+- **Ya lo tienes en el ordenador (por ejemplo, un proyecto que ya estás editando en VS Code):** escribe la ruta (ej. `/Users/miguel/Developer/mi-proyecto`) o pulsa "Examinar..." y búscala con el explorador de carpetas. Es importante que sea la misma carpeta donde tienes el proyecto abierto en VS Code — si no, GitEdu y VS Code estarían mirando dos copias distintas y no se "enterarían" la una de la otra.
 - **Está en GitHub y no lo tienes descargado:** pega la URL (ej. `https://github.com/Hermida95/rehab`). El botón cambiará a "Clonar y cargar" — al pulsarlo, lo descarga en `~/GitEdu-Repos/` y lo abre. Si es un repo privado tuyo, funciona igual, usa las credenciales que ya tienes guardadas en el Mac.
+- **Es una carpeta nueva que todavía no es un repositorio Git:** si abres una carpeta sin `.git`, te avisará y te dejará un botón "Inicializar repositorio Git aquí" — lo pulsas, confirmas, y ya puedes empezar a hacer stage/commit de tus primeros ficheros sin haber tocado la terminal.
 
 ### 2. Leer el grafo
 

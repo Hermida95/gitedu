@@ -55,6 +55,15 @@ export function extractGitErrorMessage(err: unknown): string {
   return String(err)
 }
 
+// Un repo recién creado con `git init` es válido pero no tiene HEAD todavía, así que
+// `git log` falla. Lo comprobamos con esto (en vez de mirar el texto del error de git,
+// que cambia de idioma según la configuración regional) para no confundirlo con un error real.
+async function hasAnyCommit(repoPath: string): Promise<boolean> {
+  return execFileAsync('git', ['rev-parse', '--verify', 'HEAD'], { cwd: repoPath, env: GIT_ENV })
+    .then(() => true)
+    .catch(() => false)
+}
+
 export async function getCommitGraph(repoPath: string): Promise<GitLogResult> {
   const invalidRepoError = assertGitRepo(repoPath)
   if (invalidRepoError) {
@@ -70,6 +79,9 @@ export async function getCommitGraph(repoPath: string): Promise<GitLogResult> {
     )
     return { success: true, output: stdout }
   } catch (err) {
+    if (!(await hasAnyCommit(repoPath))) {
+      return { success: true, output: '' }
+    }
     const message = extractGitErrorMessage(err)
     return { success: false, output: '', error: message }
   }
@@ -129,6 +141,9 @@ export async function getCommitGraphData(repoPath: string): Promise<CommitGraphD
 
     return { success: true, commits }
   } catch (err) {
+    if (!(await hasAnyCommit(repoPath))) {
+      return { success: true, commits: [] }
+    }
     const message = extractGitErrorMessage(err)
     return { success: false, commits: [], error: message }
   }

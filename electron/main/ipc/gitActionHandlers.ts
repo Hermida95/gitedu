@@ -9,6 +9,7 @@ import {
   continueRebase,
   createBranch,
   fetchRepo,
+  initRepo,
   markConflictResolved,
   mergeBranch,
   pullBranch,
@@ -115,5 +116,9 @@ export function registerGitActionHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.STASH_DROP, async (_event, repoPath: string, index: number) => {
     return stashDrop(repoPath, index)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.INIT_REPO, async (_event, folderPath: string) => {
+    return initRepo(folderPath)
   })
 }

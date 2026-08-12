@@ -26,6 +26,7 @@ export const IPC_CHANNELS = {
   RUN_INTERACTIVE_REBASE: 'git:runInteractiveRebase',
 
   CLONE_REPO: 'git:cloneRepo',
+  INIT_REPO: 'git:initRepo',
 
   FETCH: 'git:fetch',
   PULL: 'git:pull',
