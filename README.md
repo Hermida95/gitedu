@@ -4,6 +4,8 @@ A desktop app that visualizes local Git repositories as an interactive commit gr
 
 > 🚧 Personal / educational project, not a production tool. Built end-to-end in a focused session as a way to explore Electron's process model and Git internals in depth.
 
+**[⬇ Download the latest release (macOS)](https://github.com/Hermida95/gitedu/releases/latest)** — unsigned build, see [Running GitEdu](#running-gitedu) below for the one-time Gatekeeper workaround.
+
 <!--
   Drop your own screenshots here (see "Capturing screenshots" below) and
   uncomment these lines. Recommended shots, in this order:
