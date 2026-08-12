@@ -19,12 +19,14 @@ import { DiffViewerModal } from './components/diff/DiffViewerModal'
 import { CommandLog, type LastCommand } from './components/CommandLog'
 import { buildCommandPreview, type GitAction } from './lib/gitCommandPreview'
 import { SandboxView } from './components/sandbox/SandboxView'
+import { addRecentRepo, getRecentRepos, removeRecentRepo } from './lib/recentRepos'
 
 const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
 
 function App() {
   const [mode, setMode] = useState<'real' | 'sandbox'>('real')
   const [repoPath, setRepoPath] = useState('')
+  const [recentRepos, setRecentRepos] = useState<string[]>(getRecentRepos)
   const [activeRepoPath, setActiveRepoPath] = useState('')
   const [commits, setCommits] = useState<Commit[]>([])
   const [rawOutput, setRawOutput] = useState('')
@@ -63,6 +65,7 @@ function App() {
       setCommits(graphData.commits)
       setRawOutput(logResult.output)
       setActiveRepoPath(path)
+      setRecentRepos(addRecentRepo(path))
     } else {
       setError(graphData.error ?? 'Error desconocido')
       setCommits([])
@@ -128,6 +131,15 @@ function App() {
       setRepoPath(selected)
       refreshRepo(selected)
     }
+  }
+
+  function openRecent(path: string) {
+    setRepoPath(path)
+    refreshRepo(path)
+  }
+
+  function forgetRecent(path: string) {
+    setRecentRepos(removeRecentRepo(path))
   }
 
   // Acciones de bajo riesgo (reversibles, rutinarias): se ejecutan al instante
@@ -292,6 +304,35 @@ function App() {
                 {loading ? 'Cargando...' : isRemoteUrl(repoPath) ? 'Clonar y cargar' : 'Cargar grafo'}
               </button>
             </div>
+
+            {recentRepos.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-slate-400">Recientes:</span>
+                {recentRepos.map((path) => (
+                  <div
+                    key={path}
+                    className="group flex items-center gap-1 rounded border border-slate-700 py-1 pl-2 pr-1 hover:border-emerald-600"
+                  >
+                    <button
+                      className="max-w-[14rem] truncate font-mono text-xs text-slate-300 hover:text-emerald-300 disabled:opacity-50"
+                      onClick={() => openRecent(path)}
+                      disabled={loading}
+                      title={path}
+                    >
+                      {path.split('/').pop() || path}
+                    </button>
+                    <button
+                      className="rounded px-1 text-slate-500 opacity-0 hover:text-red-400 group-hover:opacity-100 group-focus-within:opacity-100"
+                      onClick={() => forgetRecent(path)}
+                      disabled={loading}
+                      aria-label={`Quitar ${path} de recientes`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {isRemoteUrl(repoPath) && !loading && (
               <p className="mt-2 text-xs text-slate-400">
