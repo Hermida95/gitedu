@@ -149,7 +149,7 @@ export async function getCommitGraphData(repoPath: string): Promise<CommitGraphD
   }
 }
 
-function parsePorcelainV2(stdout: string): Omit<RepoStatus, 'success' | 'error'> {
+export function parsePorcelainV2(stdout: string): Omit<RepoStatus, 'success' | 'error'> {
   let branch: string | null = null
   let upstream: string | null = null
   let ahead = 0
