@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CommitGraph } from '../graph/CommitGraph'
 import { CommandPreviewModal } from '../command-preview/CommandPreviewModal'
 import { buildCommandPreview, type GitAction } from '../../lib/gitCommandPreview'
+import { LESSONS } from '../../lib/lessons'
 import {
   checkout,
   commitChange,
@@ -50,10 +51,15 @@ export function SandboxView() {
   const [selectedBranch, setSelectedBranch] = useState('')
   const [commitMessage, setCommitMessage] = useState('')
 
+  const [guidedMode, setGuidedMode] = useState(true)
+  const [lessonIndex, setLessonIndex] = useState(0)
+  const [showHint, setShowHint] = useState(false)
+
   const branchNames = Object.keys(state.branches)
   const otherBranches = branchNames.filter((b) => b !== state.currentBranch)
   const currentTip = state.branches[state.currentBranch]
   const localOrigin = state.localOriginRefs[state.currentBranch]
+  const currentLesson = guidedMode ? LESSONS[lessonIndex] : undefined
 
   const highlightRefs =
     pendingAction?.type === 'mergeBranch'
@@ -61,6 +67,23 @@ export function SandboxView() {
       : pendingAction?.type === 'rebaseBranch'
         ? [state.currentBranch, pendingAction.ontoBranch]
         : []
+
+  // Se comprueba tras CADA cambio de estado, venga de donde venga (una acción
+  // instantánea como Stage, o una confirmada desde el modal) — así no hace
+  // falta acordarse de comprobar el progreso en cada sitio donde se llama a
+  // setState, solo aquí, una vez.
+  useEffect(() => {
+    if (currentLesson?.isComplete(state)) {
+      setLessonIndex((i) => Math.min(i + 1, LESSONS.length))
+      setShowHint(false)
+    }
+  }, [state, currentLesson])
+
+  function resetSandbox() {
+    setState(createInitialState())
+    setLessonIndex(0)
+    setShowHint(false)
+  }
 
   function confirm() {
     if (!pendingAction) return
@@ -76,6 +99,59 @@ export function SandboxView() {
           Modo aprendizaje: nada de esto toca ficheros ni repositorios reales. Es un repo de mentira, en
           memoria, solo para practicar.
         </div>
+
+        {guidedMode && currentLesson && (
+          <div className="border-b border-sky-900/40 bg-sky-950/20 p-3 text-xs">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="font-semibold text-sky-300">
+                Paso {lessonIndex + 1}/{LESSONS.length}: {currentLesson.title}
+              </span>
+              <button
+                className="shrink-0 text-slate-400 underline hover:text-slate-200"
+                onClick={() => setGuidedMode(false)}
+              >
+                Saltar a modo libre
+              </button>
+            </div>
+            <p className="text-slate-300">{currentLesson.instruction}</p>
+            <button
+              className="mt-1 text-sky-400 underline hover:text-sky-300"
+              onClick={() => setShowHint((v) => !v)}
+            >
+              {showHint ? 'Ocultar pista' : '¿Necesitas una pista?'}
+            </button>
+            {showHint && <p className="mt-1 text-slate-400">{currentLesson.hint}</p>}
+          </div>
+        )}
+
+        {guidedMode && !currentLesson && (
+          <div className="border-b border-emerald-900/40 bg-emerald-950/20 p-3 text-xs">
+            <p className="font-semibold text-emerald-400">
+              🎉 ¡Completaste todas las lecciones! Ya has practicado commit, rama, checkout, merge, push, fetch
+              y pull.
+            </p>
+            <button
+              className="mt-1 text-slate-400 underline hover:text-slate-200"
+              onClick={() => setGuidedMode(false)}
+            >
+              Seguir en modo libre
+            </button>
+          </div>
+        )}
+
+        {!guidedMode && (
+          <div className="border-b border-slate-800 p-2 text-xs">
+            <button
+              className="text-sky-400 underline hover:text-sky-300"
+              onClick={() => {
+                setGuidedMode(true)
+                setLessonIndex(0)
+              }}
+            >
+              Volver a empezar las lecciones guiadas
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 p-3">
           <div className="text-sm">
@@ -254,7 +330,7 @@ export function SandboxView() {
 
           <button
             className="mt-2 rounded border border-red-900 px-2 py-1 text-xs text-red-300 hover:bg-red-950"
-            onClick={() => setState(createInitialState())}
+            onClick={resetSandbox}
           >
             Reiniciar sandbox
           </button>
