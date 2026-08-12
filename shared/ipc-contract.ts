@@ -26,6 +26,19 @@ export const IPC_CHANNELS = {
   RUN_INTERACTIVE_REBASE: 'git:runInteractiveRebase',
 
   CLONE_REPO: 'git:cloneRepo',
+
+  FETCH: 'git:fetch',
+  PULL: 'git:pull',
+
+  LIST_STASHES: 'git:listStashes',
+  STASH_SAVE: 'git:stashSave',
+  STASH_POP: 'git:stashPop',
+  STASH_DROP: 'git:stashDrop',
+
+  GET_FILE_DIFF: 'git:getFileDiff',
+
+  WATCH_REPO: 'git:watchRepo',
+  REPO_CHANGED_EVENT: 'git:repoChanged',
 } as const
 
 export interface GitLogResult {
@@ -122,5 +135,22 @@ export interface CloneRepoResult {
   command: string
   localPath: string
   output: string
+  error?: string
+}
+
+export interface StashInfo {
+  index: number
+  message: string
+}
+
+export interface StashListResult {
+  success: boolean
+  stashes: StashInfo[]
+  error?: string
+}
+
+export interface FileDiffResult {
+  success: boolean
+  diff: string
   error?: string
 }

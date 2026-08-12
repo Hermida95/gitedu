@@ -5,11 +5,14 @@ import {
   type CloneRepoResult,
   type CommitGraphData,
   type ConflictState,
+  type FileDiffResult,
+  type FileStatusCode,
   type GitActionResult,
   type GitLogResult,
   type RebaseCommitsResult,
   type RebaseStep,
   type RepoStatus,
+  type StashListResult,
 } from '../../shared/ipc-contract'
 
 contextBridge.exposeInMainWorld('gitedu', {
@@ -63,4 +66,26 @@ contextBridge.exposeInMainWorld('gitedu', {
     ipcRenderer.invoke(IPC_CHANNELS.RUN_INTERACTIVE_REBASE, repoPath, ontoBranch, steps),
 
   cloneRepo: (remoteUrl: string): Promise<CloneRepoResult> => ipcRenderer.invoke(IPC_CHANNELS.CLONE_REPO, remoteUrl),
+
+  fetch: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.FETCH, repoPath),
+  pull: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.PULL, repoPath),
+
+  listStashes: (repoPath: string): Promise<StashListResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.LIST_STASHES, repoPath),
+  stashSave: (repoPath: string, message: string): Promise<GitActionResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.STASH_SAVE, repoPath, message),
+  stashPop: (repoPath: string, index: number): Promise<GitActionResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.STASH_POP, repoPath, index),
+  stashDrop: (repoPath: string, index: number): Promise<GitActionResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.STASH_DROP, repoPath, index),
+
+  getFileDiff: (repoPath: string, filePath: string, status: FileStatusCode): Promise<FileDiffResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.GET_FILE_DIFF, repoPath, filePath, status),
+
+  watchRepo: (repoPath: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.WATCH_REPO, repoPath),
+  onRepoChanged: (callback: () => void): (() => void) => {
+    const listener = () => callback()
+    ipcRenderer.on(IPC_CHANNELS.REPO_CHANGED_EVENT, listener)
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.REPO_CHANGED_EVENT, listener)
+  },
 })

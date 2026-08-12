@@ -3,11 +3,13 @@ import {
   getCommitGraph,
   getCommitGraphData,
   getConflictState,
+  getFileDiff,
   getRebaseCommits,
   getRepoStatus,
   listBranches,
+  listStashes,
 } from '../../services/gitService'
-import { IPC_CHANNELS } from '../../../shared/ipc-contract'
+import { IPC_CHANNELS, type FileStatusCode } from '../../../shared/ipc-contract'
 
 export function registerGitHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_COMMIT_GRAPH, async (_event, repoPath: string) => {
@@ -33,4 +35,15 @@ export function registerGitHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.GET_REBASE_COMMITS, async (_event, repoPath: string, ontoBranch: string) => {
     return getRebaseCommits(repoPath, ontoBranch)
   })
+
+  ipcMain.handle(IPC_CHANNELS.LIST_STASHES, async (_event, repoPath: string) => {
+    return listStashes(repoPath)
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.GET_FILE_DIFF,
+    async (_event, repoPath: string, filePath: string, status: FileStatusCode) => {
+      return getFileDiff(repoPath, filePath, status)
+    }
+  )
 }

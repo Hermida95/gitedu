@@ -1,11 +1,21 @@
-import { useState } from 'react'
-import type { BranchInfo, Commit, ConflictState, GitActionResult, RepoStatus } from '../shared/ipc-contract'
+import { useEffect, useState } from 'react'
+import type {
+  BranchInfo,
+  Commit,
+  ConflictState,
+  FileStatus,
+  GitActionResult,
+  RepoStatus,
+  StashInfo,
+} from '../shared/ipc-contract'
 import { CommitGraph } from './components/graph/CommitGraph'
 import { StatusPanel } from './components/sidebar/StatusPanel'
 import { BranchPanel } from './components/sidebar/BranchPanel'
+import { StashPanel } from './components/sidebar/StashPanel'
 import { CommandPreviewModal } from './components/command-preview/CommandPreviewModal'
 import { ConflictPanel } from './components/conflict/ConflictPanel'
 import { InteractiveRebasePanel } from './components/rebase/InteractiveRebasePanel'
+import { DiffViewerModal } from './components/diff/DiffViewerModal'
 import { CommandLog, type LastCommand } from './components/CommandLog'
 import { buildCommandPreview, type GitAction } from './lib/gitCommandPreview'
 
@@ -13,14 +23,17 @@ const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(valu
 
 function App() {
   const [repoPath, setRepoPath] = useState('')
+  const [activeRepoPath, setActiveRepoPath] = useState('')
   const [commits, setCommits] = useState<Commit[]>([])
   const [rawOutput, setRawOutput] = useState('')
   const [showRaw, setShowRaw] = useState(false)
   const [status, setStatus] = useState<RepoStatus | null>(null)
   const [branches, setBranches] = useState<BranchInfo[]>([])
+  const [stashes, setStashes] = useState<StashInfo[]>([])
   const [conflictState, setConflictState] = useState<ConflictState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [watching, setWatching] = useState(false)
 
   const [pendingAction, setPendingAction] = useState<GitAction | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -28,23 +41,26 @@ function App() {
   const [resetToken, setResetToken] = useState(0)
 
   const [interactiveRebaseTarget, setInteractiveRebaseTarget] = useState<string | null>(null)
+  const [diffTarget, setDiffTarget] = useState<FileStatus | null>(null)
 
   async function refreshRepo(path: string) {
     if (!path) return
     setLoading(true)
     setError(null)
 
-    const [graphData, logResult, statusResult, branchResult, conflictResult] = await Promise.all([
+    const [graphData, logResult, statusResult, branchResult, conflictResult, stashResult] = await Promise.all([
       window.gitedu.getCommitGraphData(path),
       window.gitedu.getCommitGraph(path),
       window.gitedu.getRepoStatus(path),
       window.gitedu.listBranches(path),
       window.gitedu.getConflictState(path),
+      window.gitedu.listStashes(path),
     ])
 
     if (graphData.success) {
       setCommits(graphData.commits)
       setRawOutput(logResult.output)
+      setActiveRepoPath(path)
     } else {
       setError(graphData.error ?? 'Error desconocido')
       setCommits([])
@@ -53,8 +69,29 @@ function App() {
     setStatus(statusResult.success ? statusResult : null)
     setBranches(branchResult.success ? branchResult.branches : [])
     setConflictState(conflictResult)
+    setStashes(stashResult.success ? stashResult.stashes : [])
     setLoading(false)
   }
+
+  // Vigila el .git del repo activo: si algo lo cambia por fuera (terminal, otro
+  // editor...), el evento llega aquí y recargamos solos, sin que haga falta pulsar nada.
+  useEffect(() => {
+    if (!activeRepoPath) return
+
+    let cancelled = false
+    window.gitedu.watchRepo(activeRepoPath).then((ok) => {
+      if (!cancelled) setWatching(ok)
+    })
+
+    const unsubscribe = window.gitedu.onRepoChanged(() => {
+      refreshRepo(activeRepoPath)
+    })
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [activeRepoPath])
 
   // El input acepta tanto una ruta local como una URL remota (https://... o
   // git@...): si detecta una URL, clona primero a ~/GitEdu-Repos y luego carga
@@ -129,6 +166,21 @@ function App() {
       case 'checkoutBranch':
         result = await window.gitedu.checkoutBranch(repoPath, pendingAction.name)
         break
+      case 'fetch':
+        result = await window.gitedu.fetch(repoPath)
+        break
+      case 'pull':
+        result = await window.gitedu.pull(repoPath)
+        break
+      case 'stashSave':
+        result = await window.gitedu.stashSave(repoPath, pendingAction.message)
+        break
+      case 'stashPop':
+        result = await window.gitedu.stashPop(repoPath, pendingAction.index)
+        break
+      case 'stashDrop':
+        result = await window.gitedu.stashDrop(repoPath, pendingAction.index)
+        break
     }
 
     setLastCommand({ command: result.command, success: result.success, error: result.error })
@@ -183,7 +235,17 @@ function App() {
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-100">
       <header className="border-b border-slate-800 p-4">
-        <h1 className="mb-3 text-lg font-bold">GitEdu</h1>
+        <div className="mb-3 flex items-center gap-2">
+          <h1 className="text-lg font-bold">GitEdu</h1>
+          {watching && (
+            <span
+              className="flex items-center gap-1 rounded-full bg-emerald-900/40 px-2 py-0.5 text-[10px] text-emerald-300"
+              title="GitEdu está vigilando este repositorio: si cambias algo desde la terminal, se recargará solo."
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> en vivo
+            </span>
+          )}
+        </div>
 
         <div className="flex gap-2">
           <input
@@ -239,13 +301,14 @@ function App() {
             status={status}
             onStage={(filePath) => runImmediate(() => window.gitedu.stageFile(repoPath, filePath))}
             onUnstage={(filePath) => runImmediate(() => window.gitedu.unstageFile(repoPath, filePath))}
+            onViewDiff={(file) => setDiffTarget(file)}
             onRequestCommit={(message) => requestAction({ type: 'commit', message })}
             busy={actionLoading}
           />
           <BranchPanel
             branches={branches}
-            onCheckout={(name) => runImmediate(() => window.gitedu.checkoutBranch(repoPath, name))}
-            onCreateBranch={(name) => runImmediate(() => window.gitedu.createBranch(repoPath, name))}
+            onCheckout={(name) => requestAction({ type: 'checkoutBranch', name })}
+            onCreateBranch={(name) => requestAction({ type: 'createBranch', name })}
             onRequestMerge={(branchName) =>
               requestAction({ type: 'mergeBranch', branchName, currentBranch: currentBranchName })
             }
@@ -254,6 +317,15 @@ function App() {
             }
             onOpenInteractiveRebase={(ontoBranch) => setInteractiveRebaseTarget(ontoBranch)}
             onRequestPush={() => requestAction({ type: 'push' })}
+            onRequestFetch={() => requestAction({ type: 'fetch' })}
+            onRequestPull={() => requestAction({ type: 'pull' })}
+            busy={actionLoading}
+          />
+          <StashPanel
+            stashes={stashes}
+            onRequestStashSave={(message) => requestAction({ type: 'stashSave', message })}
+            onRequestStashPop={(index, stashMessage) => requestAction({ type: 'stashPop', index, stashMessage })}
+            onRequestStashDrop={(index, stashMessage) => requestAction({ type: 'stashDrop', index, stashMessage })}
             busy={actionLoading}
           />
         </aside>
@@ -281,6 +353,15 @@ function App() {
           currentBranch={currentBranchName}
           onClose={() => setInteractiveRebaseTarget(null)}
           onExecuted={handleInteractiveRebaseExecuted}
+        />
+      )}
+
+      {diffTarget && (
+        <DiffViewerModal
+          repoPath={repoPath}
+          filePath={diffTarget.path}
+          status={diffTarget.status}
+          onClose={() => setDiffTarget(null)}
         />
       )}
 

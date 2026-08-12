@@ -27,10 +27,12 @@ Most Git GUIs optimize for speed: click, and it's done. That's great once you al
 ## Features
 
 - **Commit graph visualization** — [React Flow](https://reactflow.dev/) + [dagre](https://github.com/dagrejs/dagre) for layout, reading `git log --all` in a structured (not just text) format.
-- **Command preview panel** — before `commit`, `merge`, `rebase` or `push`, see the exact command and its expected effect on the tree; merge/rebase also highlight the two branch tips involved directly on the graph.
-- **Full write flow** — stage/unstage, commit, create/checkout branches, merge, rebase, push, all via native `git`.
+- **Command preview panel** — before `commit`, `merge`, `rebase`, `push`, `pull`, `fetch`, checkout, creating a branch, or touching a stash, see the exact command and its expected effect on the tree; merge/rebase also highlight the two branch tips involved directly on the graph. (Staging/unstaging a file stays instant — a modal on every single click would defeat the point.)
+- **Full write flow** — stage/unstage, commit, create/checkout branches, merge, rebase, stash (save/pop/drop), fetch, pull, push, all via native `git`.
 - **Interactive rebase** — pick / reword / squash / drop commits and reorder them, executed as a single scripted, non-interactive `git rebase -i` (details below).
 - **Conflict resolution panel** — detects an in-progress merge or rebase, lists conflicted files, and lets you resolve via "ours" / "theirs" or mark as resolved after a manual edit, then continue or abort.
+- **Diff viewer** — click any file in the status list to see its unified diff (staged, unstaged, or the full content for a new untracked file).
+- **Live refresh** — watches the repo's `.git` directory; if you run a git command from a terminal (or another tool) while GitEdu has that repo open, it notices and reloads on its own. A small "en vivo" badge next to the title shows when this is active.
 - **Native folder picker**, packaged as a real desktop app via `electron-builder`.
 - **Open a repo by URL** — paste a `https://github.com/...` (or any `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu itself only ever reads/writes local repos; there's no "remote mode".
 
@@ -128,10 +130,11 @@ Save them into `docs/screenshots/` and uncomment the image block at the top of t
 
 Being upfront about scope, since this was built to learn and to show real, working code rather than to cover every edge case:
 
-- No inline 3-way diff/merge editor — conflicts are resolved via "ours"/"theirs" or by editing the file externally and marking it resolved.
+- The diff viewer shows the unified diff as text — no side-by-side view, no 3-way merge editor. Conflicts are resolved via "ours"/"theirs" or by editing the file externally and marking it resolved.
 - Interactive rebase covers pick/reword/squash/drop/reorder, not the full range of `git rebase -i` (no `edit` pauses, no `exec` steps beyond the internal reword mechanism).
 - No code signing configured for the packaged app — `npm run dist` produces an unsigned build.
-- No filesystem watcher — the graph only refreshes when you click "Cargar grafo" or right after an action run *through GitEdu itself*. If you `git commit` from a terminal (or another tool) while a repo is open, GitEdu won't notice until you reload it manually.
+- No tags, no remote management UI (adding/removing remotes) — `origin` is set automatically when you clone by URL, but there's no button to add a second remote.
+- The live watcher (`fs.watch` with `recursive: true`) only works natively on macOS and Windows; on Linux it silently falls back to manual refresh.
 
 ## License
 

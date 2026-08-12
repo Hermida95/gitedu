@@ -8,14 +8,19 @@ import {
   continueMerge,
   continueRebase,
   createBranch,
+  fetchRepo,
   markConflictResolved,
   mergeBranch,
+  pullBranch,
   pushBranch,
   rebaseBranch,
   resolveConflictOurs,
   resolveConflictTheirs,
   runInteractiveRebase,
   stageFile,
+  stashDrop,
+  stashPop,
+  stashSave,
   unstageFile,
 } from '../../services/gitActions'
 import { IPC_CHANNELS, type RebaseStep } from '../../../shared/ipc-contract'
@@ -90,5 +95,25 @@ export function registerGitActionHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.CLONE_REPO, async (_event, remoteUrl: string) => {
     return cloneRepo(remoteUrl)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FETCH, async (_event, repoPath: string) => {
+    return fetchRepo(repoPath)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PULL, async (_event, repoPath: string) => {
+    return pullBranch(repoPath)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STASH_SAVE, async (_event, repoPath: string, message: string) => {
+    return stashSave(repoPath, message)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STASH_POP, async (_event, repoPath: string, index: number) => {
+    return stashPop(repoPath, index)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STASH_DROP, async (_event, repoPath: string, index: number) => {
+    return stashDrop(repoPath, index)
   })
 }

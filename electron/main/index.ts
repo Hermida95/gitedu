@@ -3,6 +3,7 @@ import path from 'node:path'
 import { registerGitHandlers } from './ipc/gitHandlers'
 import { registerGitActionHandlers } from './ipc/gitActionHandlers'
 import { registerDialogHandlers } from './ipc/dialogHandlers'
+import { registerWatcherHandlers } from './ipc/watcherHandlers'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -29,6 +30,7 @@ app.whenReady().then(() => {
   registerGitHandlers()
   registerGitActionHandlers()
   registerDialogHandlers()
+  registerWatcherHandlers(() => mainWindow)
   createWindow()
 
   app.on('activate', () => {

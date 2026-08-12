@@ -58,6 +58,19 @@ export const rebaseBranch = (repoPath: string, ontoBranch: string): Promise<GitA
 
 export const pushBranch = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['push'])
 
+export const fetchRepo = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['fetch'])
+
+export const pullBranch = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['pull'])
+
+export const stashSave = (repoPath: string, message: string): Promise<GitActionResult> =>
+  message ? runGit(repoPath, ['stash', 'push', '-m', message]) : runGit(repoPath, ['stash', 'push'])
+
+export const stashPop = (repoPath: string, index: number): Promise<GitActionResult> =>
+  runGit(repoPath, ['stash', 'pop', `stash@{${index}}`])
+
+export const stashDrop = (repoPath: string, index: number): Promise<GitActionResult> =>
+  runGit(repoPath, ['stash', 'drop', `stash@{${index}}`])
+
 // --- Resolución de conflictos (merge y rebase comparten los mismos comandos) ---
 
 export const resolveConflictOurs = async (repoPath: string, filePath: string): Promise<GitActionResult> => {

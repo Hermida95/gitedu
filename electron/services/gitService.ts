@@ -9,12 +9,15 @@ import type {
   CommitGraphData,
   ConflictInProgress,
   ConflictState,
+  FileDiffResult,
   FileStatus,
   FileStatusCode,
   GitLogResult,
   RebaseCommitInfo,
   RebaseCommitsResult,
   RepoStatus,
+  StashInfo,
+  StashListResult,
 } from '../../shared/ipc-contract'
 
 const execFileAsync = promisify(execFile)
@@ -270,5 +273,73 @@ export async function getRebaseCommits(repoPath: string, ontoBranch: string): Pr
   } catch (err) {
     const message = extractGitErrorMessage(err)
     return { success: false, commits: [], error: message }
+  }
+}
+
+export async function listStashes(repoPath: string): Promise<StashListResult> {
+  const invalidRepoError = assertGitRepo(repoPath)
+  if (invalidRepoError) {
+    return { success: false, stashes: [], error: invalidRepoError }
+  }
+
+  try {
+    const format = ['%gd', '%s'].join(FIELD_SEP)
+    const { stdout } = await execFileAsync('git', ['stash', 'list', `--pretty=format:${format}`], {
+      cwd: repoPath,
+      env: GIT_ENV,
+    })
+
+    const stashes: StashInfo[] = stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line, i) => {
+        const [ref, message] = line.split(FIELD_SEP)
+        const match = ref.match(/stash@\{(\d+)\}/)
+        return { index: match ? Number(match[1]) : i, message: message ?? '' }
+      })
+
+    return { success: true, stashes }
+  } catch (err) {
+    const message = extractGitErrorMessage(err)
+    return { success: false, stashes: [], error: message }
+  }
+}
+
+export async function getFileDiff(
+  repoPath: string,
+  filePath: string,
+  status: FileStatusCode
+): Promise<FileDiffResult> {
+  const invalidRepoError = assertGitRepo(repoPath)
+  if (invalidRepoError) {
+    return { success: false, diff: '', error: invalidRepoError }
+  }
+
+  // Un fichero sin rastrear no tiene nada que "diferenciar" en el índice: se compara
+  // contra /dev/null para mostrar todo su contenido como líneas añadidas.
+  const args =
+    status === 'untracked'
+      ? ['diff', '--no-index', '--', '/dev/null', filePath]
+      : status === 'staged'
+        ? ['diff', '--cached', '--', filePath]
+        : ['diff', '--', filePath]
+
+  try {
+    const { stdout } = await execFileAsync('git', args, {
+      cwd: repoPath,
+      maxBuffer: 1024 * 1024 * 10,
+      env: GIT_ENV,
+    })
+    return { success: true, diff: stdout }
+  } catch (err) {
+    // git diff --no-index sale con código 1 (no es un error) en cuanto detecta
+    // cualquier diferencia, así que el diff real viene igualmente en stdout.
+    const e = err as { stdout?: string }
+    if (status === 'untracked' && e.stdout) {
+      return { success: true, diff: e.stdout }
+    }
+    const message = extractGitErrorMessage(err)
+    return { success: false, diff: '', error: message }
   }
 }

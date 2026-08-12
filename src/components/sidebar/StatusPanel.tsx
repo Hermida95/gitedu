@@ -5,16 +5,21 @@ interface StatusPanelProps {
   status: RepoStatus | null
   onStage: (filePath: string) => void
   onUnstage: (filePath: string) => void
+  onViewDiff: (file: FileStatus) => void
   onRequestCommit: (message: string) => void
   busy: boolean
 }
 
-function FileRow({ file, onToggle }: { file: FileStatus; onToggle: () => void }) {
+function FileRow({ file, onToggle, onViewDiff }: { file: FileStatus; onToggle: () => void; onViewDiff: () => void }) {
   return (
     <li className="flex items-center justify-between gap-2 rounded px-2 py-1 text-xs hover:bg-slate-800">
-      <span className="truncate font-mono text-slate-300" title={file.path}>
+      <button
+        className="min-w-0 flex-1 truncate text-left font-mono text-slate-300 hover:text-emerald-400 hover:underline"
+        title={`${file.path} — ver diff`}
+        onClick={onViewDiff}
+      >
         {file.path}
-      </span>
+      </button>
       <button
         className="shrink-0 rounded border border-slate-700 px-2 py-0.5 text-slate-300 hover:bg-slate-700"
         onClick={onToggle}
@@ -25,7 +30,7 @@ function FileRow({ file, onToggle }: { file: FileStatus; onToggle: () => void })
   )
 }
 
-export function StatusPanel({ status, onStage, onUnstage, onRequestCommit, busy }: StatusPanelProps) {
+export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestCommit, busy }: StatusPanelProps) {
   const [message, setMessage] = useState('')
 
   if (!status) {
@@ -55,7 +60,7 @@ export function StatusPanel({ status, onStage, onUnstage, onRequestCommit, busy 
         </h3>
         <ul className="space-y-0.5">
           {staged.map((f) => (
-            <FileRow key={f.path} file={f} onToggle={() => onUnstage(f.path)} />
+            <FileRow key={f.path} file={f} onToggle={() => onUnstage(f.path)} onViewDiff={() => onViewDiff(f)} />
           ))}
           {staged.length === 0 && <p className="px-2 text-xs text-slate-600">Nada preparado para commit.</p>}
         </ul>
@@ -67,7 +72,7 @@ export function StatusPanel({ status, onStage, onUnstage, onRequestCommit, busy 
         </h3>
         <ul className="space-y-0.5">
           {[...unstaged, ...untracked].map((f) => (
-            <FileRow key={f.path} file={f} onToggle={() => onStage(f.path)} />
+            <FileRow key={f.path} file={f} onToggle={() => onStage(f.path)} onViewDiff={() => onViewDiff(f)} />
           ))}
           {unstaged.length + untracked.length === 0 && (
             <p className="px-2 text-xs text-slate-600">Directorio de trabajo limpio.</p>

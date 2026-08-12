@@ -5,11 +5,14 @@ import type {
   CloneRepoResult,
   CommitGraphData,
   ConflictState,
+  FileDiffResult,
+  FileStatusCode,
   GitActionResult,
   GitLogResult,
   RebaseCommitsResult,
   RebaseStep,
   RepoStatus,
+  StashListResult,
 } from '../shared/ipc-contract'
 
 declare global {
@@ -44,6 +47,19 @@ declare global {
       runInteractiveRebase: (repoPath: string, ontoBranch: string, steps: RebaseStep[]) => Promise<GitActionResult>
 
       cloneRepo: (remoteUrl: string) => Promise<CloneRepoResult>
+
+      fetch: (repoPath: string) => Promise<GitActionResult>
+      pull: (repoPath: string) => Promise<GitActionResult>
+
+      listStashes: (repoPath: string) => Promise<StashListResult>
+      stashSave: (repoPath: string, message: string) => Promise<GitActionResult>
+      stashPop: (repoPath: string, index: number) => Promise<GitActionResult>
+      stashDrop: (repoPath: string, index: number) => Promise<GitActionResult>
+
+      getFileDiff: (repoPath: string, filePath: string, status: FileStatusCode) => Promise<FileDiffResult>
+
+      watchRepo: (repoPath: string) => Promise<boolean>
+      onRepoChanged: (callback: () => void) => () => void
     }
   }
 }

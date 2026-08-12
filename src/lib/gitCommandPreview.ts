@@ -5,6 +5,11 @@ export type GitAction =
   | { type: 'mergeBranch'; branchName: string; currentBranch: string | null }
   | { type: 'rebaseBranch'; ontoBranch: string; currentBranch: string | null }
   | { type: 'push' }
+  | { type: 'fetch' }
+  | { type: 'pull' }
+  | { type: 'stashSave'; message: string }
+  | { type: 'stashPop'; index: number; stashMessage: string }
+  | { type: 'stashDrop'; index: number; stashMessage: string }
 
 export interface CommandPreview {
   title: string
@@ -85,6 +90,66 @@ export function buildCommandPreview(action: GitAction): CommandPreview {
           'El remoto pasará a tener los mismos commits que tu rama local (si no hay divergencia).',
           'Es una acción visible para otras personas: deshacerla requiere coordinación, no solo un clic local.',
         ],
+        danger: true,
+      }
+
+    case 'fetch':
+      return {
+        title: 'Fetch',
+        command: 'git fetch',
+        description:
+          'Descarga los commits y ramas nuevos del remoto, pero no toca tus ficheros ni tu rama actual: solo actualiza las referencias "origin/...".',
+        impact: [
+          'Las ramas "origin/*" del grafo se pondrán al día con lo que haya en el remoto.',
+          'Tu rama local y tu directorio de trabajo no cambian en absoluto.',
+        ],
+        danger: false,
+      }
+
+    case 'pull':
+      return {
+        title: 'Pull',
+        command: 'git pull',
+        description:
+          'Equivale a hacer fetch y, justo después, fusionar (o rebasar, según tu configuración) los cambios descargados en tu rama actual.',
+        impact: [
+          'Tu rama local avanzará para incluir los commits nuevos del remoto.',
+          'Si tu rama había divergido, puede generar un commit de merge o pedir resolución de conflictos.',
+        ],
+        danger: false,
+      }
+
+    case 'stashSave':
+      return {
+        title: 'Guardar en stash',
+        command: action.message ? `git stash push -m "${action.message}"` : 'git stash push',
+        description:
+          'Guarda tus cambios sin commitear (staged y sin stage) en una pila aparte, y deja el directorio de trabajo limpio, como si no hubiera cambios.',
+        impact: [
+          'El directorio de trabajo quedará limpio.',
+          'Los cambios no se pierden: quedan guardados en la lista de stashes hasta que los recuperes.',
+        ],
+        danger: false,
+      }
+
+    case 'stashPop':
+      return {
+        title: 'Recuperar stash',
+        command: `git stash pop stash@{${action.index}}`,
+        description: `Reaplica los cambios guardados en "${action.stashMessage}" sobre el directorio de trabajo actual, y elimina ese stash de la lista.`,
+        impact: [
+          'Los ficheros volverán a tener esos cambios sin commitear.',
+          'Si el directorio de trabajo cambió mucho desde que se guardó, puede haber conflictos al reaplicar.',
+        ],
+        danger: false,
+      }
+
+    case 'stashDrop':
+      return {
+        title: 'Eliminar stash',
+        command: `git stash drop stash@{${action.index}}`,
+        description: `Elimina permanentemente el stash "${action.stashMessage}" sin aplicarlo.`,
+        impact: ['Ese conjunto de cambios se pierde para siempre.'],
         danger: true,
       }
   }

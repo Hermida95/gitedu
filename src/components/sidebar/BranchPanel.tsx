@@ -9,6 +9,8 @@ interface BranchPanelProps {
   onRequestRebase: (ontoBranch: string) => void
   onOpenInteractiveRebase: (ontoBranch: string) => void
   onRequestPush: () => void
+  onRequestFetch: () => void
+  onRequestPull: () => void
   busy: boolean
 }
 
@@ -20,6 +22,8 @@ export function BranchPanel({
   onRequestRebase,
   onOpenInteractiveRebase,
   onRequestPush,
+  onRequestFetch,
+  onRequestPull,
   busy,
 }: BranchPanelProps) {
   const [newBranchName, setNewBranchName] = useState('')
@@ -113,6 +117,23 @@ export function BranchPanel({
           onClick={() => onOpenInteractiveRebase(selectedBranch)}
         >
           Rebase interactivo sobre...
+        </button>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          className="flex-1 rounded border border-slate-700 px-2 py-2 text-sm hover:bg-slate-800 disabled:opacity-50"
+          disabled={busy}
+          onClick={onRequestFetch}
+        >
+          Fetch
+        </button>
+        <button
+          className="flex-1 rounded border border-slate-700 px-2 py-2 text-sm hover:bg-slate-800 disabled:opacity-50"
+          disabled={busy}
+          onClick={onRequestPull}
+        >
+          Pull
         </button>
       </div>
 
