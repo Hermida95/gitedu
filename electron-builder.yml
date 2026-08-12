@@ -1,0 +1,20 @@
+appId: com.gitedu.app
+productName: GitEdu
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+mac:
+  category: public.app-category.developer-tools
+  target: dir
+
+win:
+  target: nsis
+
+linux:
+  target: AppImage
+  category: Development
