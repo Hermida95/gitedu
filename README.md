@@ -85,6 +85,8 @@ GitEdu is a **desktop app**, not a website — there's no server to visit at `lo
 
 Either way you need [Node.js](https://nodejs.org/) 18+ and `git` itself installed and on your `PATH`.
 
+**No GitHub login, ever.** GitEdu has no OAuth flow and stores no tokens — every clone/fetch/pull/push just shells out to your system's `git`, so authentication is whatever you already have configured on that machine (SSH key, macOS Keychain, `gh auth login`, a Windows credential manager...). Cloning a public repo needs nothing; a private one needs the same credentials `git clone` would need from a terminal.
+
 ### Option A — run from source (fastest way to try it, or to hack on the code)
 
 ```bash

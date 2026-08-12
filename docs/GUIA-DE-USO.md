@@ -75,6 +75,10 @@ La app lo detecta sola y te bloquea con un panel: por cada fichero en conflicto 
 
 Botón "Push" en la barra lateral — como todo, primero te enseña el comando y luego confirmas.
 
+### ¿Y las credenciales de GitHub?
+
+GitEdu no tiene login propio ni guarda ningún token — usa el mismo `git` que ya tienes instalado, con las credenciales que ya tengas configuradas en tu ordenador (llavero de macOS, SSH, `gh auth login`...). Para repos públicos no hace falta nada. Para repos privados o para hacer push, necesita las mismas credenciales que le harían falta a un `git clone`/`git push` normal por terminal — si nunca has conectado git con tu cuenta de GitHub en ese ordenador, te dará el mismo error que te daría la terminal, no algo especial de la app.
+
 ## Preguntas rápidas
 
 **¿Necesito tener git instalado?** Sí, GitEdu usa el `git` de tu sistema, no trae uno propio.
