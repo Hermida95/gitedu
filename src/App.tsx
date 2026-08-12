@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import type {
   BranchInfo,
   Commit,
@@ -8,18 +8,30 @@ import type {
   RepoStatus,
   StashInfo,
 } from '../shared/ipc-contract'
-import { CommitGraph } from './components/graph/CommitGraph'
 import { StatusPanel } from './components/sidebar/StatusPanel'
 import { BranchPanel } from './components/sidebar/BranchPanel'
 import { StashPanel } from './components/sidebar/StashPanel'
 import { CommandPreviewModal } from './components/command-preview/CommandPreviewModal'
 import { ConflictPanel } from './components/conflict/ConflictPanel'
-import { InteractiveRebasePanel } from './components/rebase/InteractiveRebasePanel'
 import { DiffViewerModal } from './components/diff/DiffViewerModal'
 import { CommandLog, type LastCommand } from './components/CommandLog'
 import { buildCommandPreview, type GitAction } from './lib/gitCommandPreview'
-import { SandboxView } from './components/sandbox/SandboxView'
 import { addRecentRepo, getRecentRepos, removeRecentRepo } from './lib/recentRepos'
+
+// React Flow + dagre (via CommitGraph) is the single biggest chunk in the app,
+// and SandboxView pulls in the whole simulator + lesson track. Neither is
+// needed for the very first paint, so they're split out instead of bloating
+// the initial bundle every user downloads regardless of whether they ever
+// open a graph or the learning mode.
+const CommitGraph = lazy(() => import('./components/graph/CommitGraph').then((m) => ({ default: m.CommitGraph })))
+const InteractiveRebasePanel = lazy(() =>
+  import('./components/rebase/InteractiveRebasePanel').then((m) => ({ default: m.InteractiveRebasePanel }))
+)
+const SandboxView = lazy(() => import('./components/sandbox/SandboxView').then((m) => ({ default: m.SandboxView })))
+
+const GRAPH_LOADING_FALLBACK = (
+  <div className="flex h-full items-center justify-center text-sm text-slate-400">Cargando grafo...</div>
+)
 
 const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
 
@@ -380,7 +392,15 @@ function App() {
       </header>
 
       {mode === 'sandbox' ? (
-        <SandboxView />
+        <Suspense
+          fallback={
+            <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
+              Cargando modo aprendizaje...
+            </div>
+          }
+        >
+          <SandboxView />
+        </Suspense>
       ) : (
         <div className="flex flex-1 overflow-hidden">
           <aside className="w-72 shrink-0 overflow-y-auto border-r border-slate-800">
@@ -419,7 +439,9 @@ function App() {
           </aside>
 
           <main className="flex-1">
-            <CommitGraph commits={commits} highlightRefs={highlightRefs} />
+            <Suspense fallback={GRAPH_LOADING_FALLBACK}>
+              <CommitGraph commits={commits} highlightRefs={highlightRefs} />
+            </Suspense>
           </main>
         </div>
       )}
@@ -436,13 +458,15 @@ function App() {
       )}
 
       {interactiveRebaseTarget && (
-        <InteractiveRebasePanel
-          repoPath={repoPath}
-          ontoBranch={interactiveRebaseTarget}
-          currentBranch={currentBranchName}
-          onClose={() => setInteractiveRebaseTarget(null)}
-          onExecuted={handleInteractiveRebaseExecuted}
-        />
+        <Suspense fallback={null}>
+          <InteractiveRebasePanel
+            repoPath={repoPath}
+            ontoBranch={interactiveRebaseTarget}
+            currentBranch={currentBranchName}
+            onClose={() => setInteractiveRebaseTarget(null)}
+            onExecuted={handleInteractiveRebaseExecuted}
+          />
+        </Suspense>
       )}
 
       {diffTarget && (
