@@ -91,7 +91,7 @@ async function getRefsByCommit(repoPath: string): Promise<Map<string, string[]>>
   const { stdout } = await execFileAsync(
     'git',
     ['for-each-ref', '--format=%(objectname) %(refname:short)', 'refs/heads', 'refs/remotes', 'refs/tags'],
-    { cwd: repoPath, env: GIT_ENV }
+    { cwd: repoPath, maxBuffer: 1024 * 1024 * 10, env: GIT_ENV }
   )
 
   const refsByCommit = new Map<string, string[]>()
@@ -222,7 +222,7 @@ export async function listBranches(repoPath: string): Promise<BranchListResult> 
     const { stdout } = await execFileAsync(
       'git',
       ['for-each-ref', '--format=%(refname)|%(HEAD)', 'refs/heads', 'refs/remotes'],
-      { cwd: repoPath, env: GIT_ENV }
+      { cwd: repoPath, maxBuffer: 1024 * 1024 * 10, env: GIT_ENV }
     )
     const branches: BranchInfo[] = stdout
       .trim()
@@ -301,6 +301,7 @@ export async function listStashes(repoPath: string): Promise<StashListResult> {
     const format = ['%gd', '%s'].join(FIELD_SEP)
     const { stdout } = await execFileAsync('git', ['stash', 'list', `--pretty=format:${format}`], {
       cwd: repoPath,
+      maxBuffer: 1024 * 1024 * 10,
       env: GIT_ENV,
     })
 

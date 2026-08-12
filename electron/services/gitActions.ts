@@ -161,6 +161,19 @@ export async function runInteractiveRebase(
     return { success: false, command, output: '', error: invalidRepoError }
   }
 
+  // Cada hash acaba en dos sitios sensibles: una línea de la secuencia de rebase
+  // (que git interpreta) y, en los reword, el nombre de un fichero usado dentro
+  // de una línea `exec` (que git ejecuta con una shell). La UI de GitEdu siempre
+  // manda hashes reales tal cual los devolvió git, nunca texto libre del usuario,
+  // pero esto es la última barrera: si algo (un bug, una IPC llamada a mano)
+  // colara un hash con comillas, `;` o un salto de línea, sin esto se colaría
+  // hasta un `exec` de git y se ejecutaría como comando de shell arbitrario.
+  const validHash = /^[0-9a-f]{4,64}$/i
+  const invalidStep = steps.find((step) => !validHash.test(step.hash))
+  if (invalidStep) {
+    return { success: false, command, output: '', error: `Hash de commit inválido: "${invalidStep.hash}".` }
+  }
+
   const tmpDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'gitedu-rebase-'))
   await fsPromises.writeFile(path.join(repoPath, REBASE_MARKER_REL_PATH), tmpDir, 'utf8')
 
@@ -210,16 +223,29 @@ export async function runInteractiveRebase(
 // Deriva un nombre de carpeta a partir de la URL y solo se queda con caracteres
 // seguros: evita que una URL manipulada ("...git/../../algo") escape del
 // directorio de destino fijo (~/GitEdu-Repos).
+//
+// El whitelist de caracteres por sí solo NO basta: '.' es un carácter permitido
+// (nombres de repo legítimos lo llevan, p.ej. "foo.js"), así que una URL que
+// termine en "/.." pasa el filtro intacta y `path.join(destParent, '..')` se
+// sale directamente del directorio de destino. Por eso se rechazan '.'/'..'
+// explícitamente aquí, y además se verifica la ruta final más abajo.
 function deriveRepoFolderName(remoteUrl: string): string {
   const lastSegment = remoteUrl.replace(/\.git$/, '').split(/[/\\]/).filter(Boolean).pop() ?? 'repo'
   const safeName = lastSegment.replace(/[^a-zA-Z0-9._-]/g, '-')
-  return safeName || 'repo'
+  if (!safeName || safeName === '.' || safeName === '..') return 'repo'
+  return safeName
 }
 
 export async function cloneRepo(remoteUrl: string): Promise<CloneRepoResult> {
   const destParent = path.join(os.homedir(), 'GitEdu-Repos')
   const localPath = path.join(destParent, deriveRepoFolderName(remoteUrl))
   const command = `git clone ${remoteUrl} ${localPath}`
+
+  // Defensa en profundidad: aunque deriveRepoFolderName ya rechaza '.'/'..', esto
+  // garantiza que localPath nunca pueda quedar fuera de destParent pase lo que pase.
+  if (localPath !== destParent && !localPath.startsWith(destParent + path.sep)) {
+    return { success: false, command, localPath: '', output: '', error: 'Ruta de destino inválida.' }
+  }
 
   if (assertGitRepo(localPath) === null) {
     // Ya se había clonado en una sesión anterior: lo abrimos tal cual, sin volver a clonar.

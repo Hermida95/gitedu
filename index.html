@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Defensa adicional: bloquea que la página cargue scripts/estilos/frames de
+      cualquier origen que no sea ella misma. 'unsafe-inline'/'unsafe-eval' en
+      script-src siguen activos porque Vite los necesita para el HMR en
+      desarrollo (electron-vite dev); el bundle de producción no depende de
+      ellos, pero mantenerlos aquí evita tener dos index.html distintos.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; frame-src 'none'; base-uri 'self';"
+    />
     <title>GitEdu</title>
   </head>
   <body>

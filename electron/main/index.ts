@@ -27,6 +27,19 @@ function createWindow(): void {
     mainWindow = null
   })
 
+  // Endurecimiento defensivo: hoy la UI no renderiza ningún enlace externo, pero
+  // sin esto, si alguna vez lo hiciera (o algo consiguiera inyectar uno), la
+  // ventana navegaría a contenido remoto arbitrario con el MISMO preload que
+  // expone window.gitedu — es decir, esa página remota tendría acceso a leer y
+  // escribir cualquier repo git local. Se deniega toda navegación fuera del
+  // propio origen de la app y toda apertura de ventanas nuevas.
+  const allowedOrigin = process.env.VITE_DEV_SERVER_URL
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const isAllowed = allowedOrigin ? url.startsWith(allowedOrigin) : url.startsWith('file://')
+    if (!isAllowed) event.preventDefault()
+  })
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {

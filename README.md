@@ -34,6 +34,7 @@ Most Git GUIs optimize for speed: click, and it's done. That's great once you al
 - **Diff viewer** — click any file in the status list to see its unified diff (staged, unstaged, or the full content for a new untracked file).
 - **Live refresh** — watches the repo's `.git` directory; if you run a git command from a terminal (or another tool) while GitEdu has that repo open, it notices and reloads on its own. A small "en vivo" badge next to the title shows when this is active.
 - **Native folder picker**, packaged as a real desktop app via `electron-builder`.
+- **Sandbox mode for absolute beginners** — a "Modo aprendizaje" toggle switches to a fake repository that lives entirely in memory (no clone, no folder, no filesystem access at all). Same graph, same command-preview modal, but backed by a pure in-memory git model ([`src/lib/gitSimulator.ts`](src/lib/gitSimulator.ts)) so someone who's never touched git can click through commit/branch/merge/rebase/fetch/pull with zero risk.
 - **Open a repo by URL** — paste a `https://github.com/...` (or any `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu itself only ever reads/writes local repos; there's no "remote mode".
 - **Initialize a fresh repo** — point GitEdu at a plain folder that isn't a git repo yet, and it offers to run `git init` right there instead of just failing.
 
@@ -138,6 +139,10 @@ Being upfront about scope, since this was built to learn and to show real, worki
 - No code signing configured for the packaged app — `npm run dist` produces an unsigned build.
 - No tags, no remote management UI (adding/removing remotes) — `origin` is set automatically when you clone by URL, but there's no button to add a second remote.
 - The live watcher (`fs.watch` with `recursive: true`) only works natively on macOS and Windows; on Linux it silently falls back to manual refresh.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the threat model and the results of a real audit pass, including two issues that were found and fixed (a path-traversal bug and a shell-injection edge case).
 
 ## License
 
