@@ -95,6 +95,21 @@ export function StatusPanel({ status, onStage, onUnstage, onViewDiff, onRequestC
         >
           Commit ({staged.length} fichero{staged.length === 1 ? '' : 's'})
         </button>
+
+        {staged.length === 0 && unstaged.length + untracked.length > 0 && (
+          <p className="mt-1 text-xs text-amber-400">
+            👆 Pulsa "Stage" en algún fichero de arriba antes de poder commitear.
+          </p>
+        )}
+        {staged.length === 0 && unstaged.length + untracked.length === 0 && (
+          <p className="mt-1 text-xs text-slate-500">
+            No hay cambios que commitear todavía. Edita algún fichero del repo (con tu editor de siempre) y
+            vuelve aquí.
+          </p>
+        )}
+        {staged.length > 0 && !message.trim() && (
+          <p className="mt-1 text-xs text-amber-400">Escribe un mensaje de commit para poder confirmarlo.</p>
+        )}
       </section>
     </div>
   )
