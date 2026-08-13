@@ -1,50 +1,120 @@
+<div align="center">
+
 # GitEdu
 
-A desktop app that visualizes local Git repositories as an interactive commit graph — and, unlike most Git GUIs, shows you the **exact command it's about to run and its impact on the branch tree** before it runs it. Built to help people actually understand Git, not just click buttons.
+**Learn Git by seeing it happen.** A desktop app that visualizes your local repositories as an interactive commit graph — and, unlike most Git GUIs, shows you the **exact command it's about to run and its effect on the branch tree** before it runs it.
 
-> 🚧 Personal / educational project, not a production tool. Built end-to-end in a focused session as a way to explore Electron's process model and Git internals in depth.
+[![Release](https://img.shields.io/github/v/release/Hermida95/gitedu?label=release&color=10b981)](https://github.com/Hermida95/gitedu/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/Hermida95/gitedu/ci.yml?branch=main&label=CI)](https://github.com/Hermida95/gitedu/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/Hermida95/gitedu?color=blue)](LICENSE)
+![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-informational)
 
-**[⬇ Download the latest release (macOS)](https://github.com/Hermida95/gitedu/releases/latest)** — unsigned build, see [Running GitEdu](#running-gitedu) below for the one-time Gatekeeper workaround.
+**[⬇ Download the latest release](https://github.com/Hermida95/gitedu/releases/latest)** · [Guía de uso en español](docs/GUIA-DE-USO.md) · [Security](SECURITY.md)
 
-📖 [Guía de uso en español](docs/GUIA-DE-USO.md) (plain-language walkthrough, in Spanish).
+</div>
+
+> 🚧 Personal / educational project, not a production tool. Built end-to-end in a focused series of sessions to explore Electron's process model and Git internals in depth — and to have something real to point at.
 
 <!--
-  Drop your own screenshots here (see "Capturing screenshots" below) and
-  uncomment these lines. Recommended shots, in this order:
-    1. docs/screenshots/graph.png            – full window, a repo with a merge loaded
-    2. docs/screenshots/command-preview.png  – the confirmation modal before a merge/rebase
+  Drop your own screenshots here (see "Screenshots" below) and uncomment.
+  Recommended shots, in this order:
+    1. docs/screenshots/graph.png             – full window, a repo with a merge loaded
+    2. docs/screenshots/command-preview.png   – the confirmation modal before a merge/rebase
     3. docs/screenshots/interactive-rebase.png – the interactive rebase editor
-    4. docs/screenshots/conflict.png         – the conflict resolution panel
+    4. docs/screenshots/conflict.png          – the conflict resolution panel
 
   ![GitEdu — commit graph](docs/screenshots/graph.png)
   ![Command preview before running a merge](docs/screenshots/command-preview.png)
 -->
 
+---
+
+## Table of contents
+
+- [Why](#why)
+- [Features](#features)
+- [Download](#download)
+- [Running from source](#running-from-source)
+- [How to use it](#how-to-use-it)
+- [Architecture](#architecture)
+- [The interesting bit: scripting `git rebase -i` with no terminal](#the-interesting-bit-scripting-git-rebase--i-with-no-terminal)
+- [Tech stack](#tech-stack)
+- [Known limitations](#known-limitations)
+- [Security](#security)
+- [License](#license)
+
 ## Why
 
-Most Git GUIs optimize for speed: click, and it's done. That's great once you already know Git, but it teaches you nothing about what actually happened. GitEdu inverts that: every state-changing action (`commit`, `merge`, `rebase`, `push`) stops first at a preview panel showing the literal command, a plain-language explanation of what it does, and what it will do to the graph — then you confirm.
+Most Git GUIs optimize for speed: click, and it's done. That's great once you already know Git, but it teaches you nothing about what actually happened. GitEdu inverts that priority — every state-changing action (`commit`, `merge`, `rebase`, `push`...) stops first at a preview panel showing the literal command, a plain-language explanation of what it does, and what it will change on the graph. Only then do you confirm.
+
+The same philosophy drives the built-in **learning mode**: a fully sandboxed, in-memory fake repository where you can click through commits, branches, merges and rebases with zero risk to any real project, guided by a 10-step lesson track.
 
 ## Features
 
-- **Commit graph visualization** — [React Flow](https://reactflow.dev/) + [dagre](https://github.com/dagrejs/dagre) for layout, reading `git log --all` in a structured (not just text) format.
-- **Command preview panel** — before `commit`, `merge`, `rebase`, `push`, `pull`, `fetch`, checkout, creating a branch, or touching a stash, see the exact command and its expected effect on the tree; merge/rebase also highlight the two branch tips involved directly on the graph. (Staging/unstaging a file stays instant — a modal on every single click would defeat the point.)
-- **Full write flow** — stage/unstage, commit, create/checkout branches, merge, rebase, stash (save/pop/drop), fetch, pull, push, all via native `git`.
-- **Interactive rebase** — pick / reword / squash / drop commits and reorder them, executed as a single scripted, non-interactive `git rebase -i` (details below).
-- **Conflict resolution panel** — detects an in-progress merge or rebase, lists conflicted files, and lets you resolve via "ours" / "theirs" or mark as resolved after a manual edit, then continue or abort.
-- **Diff viewer** — click any file in the status list to see its unified diff (staged, unstaged, or the full content for a new untracked file).
-- **Live refresh** — watches the repo's `.git` directory; if you run a git command from a terminal (or another tool) while GitEdu has that repo open, it notices and reloads on its own. A small "en vivo" badge next to the title shows when this is active.
-- **Native folder picker**, packaged as a real desktop app via `electron-builder`.
-- **Sandbox mode for absolute beginners** — a "Modo aprendizaje" toggle switches to a fake repository that lives entirely in memory (no clone, no folder, no filesystem access at all). Same graph, same command-preview modal, but backed by a pure in-memory git model ([`src/lib/gitSimulator.ts`](src/lib/gitSimulator.ts)) so someone who's never touched git can click through commit/branch/merge/rebase/fetch/pull with zero risk.
-- **Open a repo by URL** — paste a `https://github.com/...` (or any `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu itself only ever reads/writes local repos; there's no "remote mode".
-- **Initialize a fresh repo** — point GitEdu at a plain folder that isn't a git repo yet, and it offers to run `git init` right there instead of just failing.
+| | |
+|---|---|
+| 🗺️ **Commit graph visualization** | [React Flow](https://reactflow.dev/) + [dagre](https://github.com/dagrejs/dagre) layout, reading `git log --all` into a structured (not just text) format. |
+| 💬 **Command preview panel** | Before `commit`, `merge`, `rebase`, `push`, `pull`, `fetch`, checkout, branch creation, or touching a stash: the exact command, its expected effect, and which branches it touches — highlighted live on the graph. |
+| ✍️ **Full write flow** | Stage/unstage, commit, create/checkout branches, merge, rebase, stash (save/pop/drop), fetch, pull, push — all through your real, local `git`. |
+| 🔀 **Interactive rebase** | Pick / reword / squash / drop commits and reorder them, executed as a single scripted, non-interactive `git rebase -i` — see [how](#the-interesting-bit-scripting-git-rebase--i-with-no-terminal). |
+| ⚠️ **Conflict resolution panel** | Detects an in-progress merge or rebase, lists conflicted files, and lets you resolve via "ours" / "theirs" or mark as resolved after a manual edit, then continue or abort. |
+| 📄 **Diff viewer** | Click any file in the status list for its unified diff — staged, unstaged, or the full content of a new untracked file. |
+| 🔴 **Live refresh** | Watches the repo's `.git` directory. Run a git command from a terminal (or another tool) while GitEdu has that repo open, and it notices and reloads on its own — a small "en vivo" badge shows when this is active. |
+| 🎓 **Sandbox / learning mode** | A "Modo aprendizaje" toggle switches to a fake repository that lives entirely in memory — no clone, no folder, no filesystem access at all. Same graph, same command-preview modal, backed by a pure in-memory git model ([`gitSimulator.ts`](src/lib/gitSimulator.ts)), with a guided 10-step lesson track for people who've never touched git. |
+| 🌐 **Open a repo by URL** | Paste a `https://github.com/...` (or `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu only ever reads/writes local repos — there's no "remote mode". |
+| 🆕 **Initialize a fresh repo** | Point GitEdu at a plain folder that isn't a git repo yet, and it offers to run `git init` right there instead of just failing. |
+| 🕘 **Recent repos** | The last 8 repos you opened, one click away — persisted locally, never sent anywhere. |
 
-## The interesting bit: scripting `git rebase -i` with no terminal
+## Download
 
-`git rebase -i` normally opens `$EDITOR` for you to hand-write a `pick`/`squash`/`drop` sequence, and pauses again on every `reword`/`squash` to edit commit messages. None of that works in a GUI with no TTY.
+Grab a ready-to-run build from **[the latest release](https://github.com/Hermida95/gitedu/releases/latest)** — no Node, no build step, no terminal:
 
-GitEdu's [`gitActions.ts`](electron/services/gitActions.ts) builds the desired sequence itself and injects it with a well-known trick: set `GIT_SEQUENCE_EDITOR` to a `cp` command that copies our pre-written todo file over the one Git is about to open. Rewording is handled by inserting an `exec git commit --amend -F <message-file>` line right after the `pick` — using `-F` (read from file) rather than `-m` means a rewritten commit message can never break out into a shell command, however many quotes or `;` it contains. `squash` uses `fixup` under the hood specifically to avoid a second editor pause for combining messages.
+| Platform | File | Notes |
+|---|---|---|
+| 🍎 macOS (Apple Silicon) | `GitEdu-<version>-arm64.dmg` | Unsigned — see the Gatekeeper note below. |
+| 🪟 Windows | `GitEdu-Setup-<version>.exe` | NSIS installer. |
+| 🐧 Linux | `GitEdu-<version>.AppImage` | `chmod +x` it, then run directly. |
 
-The one thing that *can* still legitimately pause a scripted rebase is a real content conflict — which is exactly what the conflict resolution panel is for. The whole thing was verified against disposable throwaway repos, including a rebase that pauses mid-sequence on a conflict, gets resolved, and resumes correctly.
+**macOS note:** this build isn't code-signed (that needs a paid Apple Developer account), so Gatekeeper will refuse to open it the first time with "GitEdu is damaged and can't be opened." That's not actually true — it's just unsigned. Right-click the app → **Open** → **Open** again in the dialog, or run:
+
+```bash
+xattr -cr "/path/to/GitEdu.app"
+```
+
+**No GitHub login, ever.** GitEdu has no OAuth flow and stores no tokens — every clone/fetch/pull/push shells out to your system's `git`, so authentication is whatever you already have configured on that machine (SSH key, macOS Keychain, `gh auth login`, a Windows credential manager...).
+
+## Running from source
+
+You'll need [Node.js](https://nodejs.org/) 20+ and `git` on your `PATH`.
+
+```bash
+git clone https://github.com/Hermida95/gitedu.git
+cd gitedu
+npm install
+npm run dev
+```
+
+A real Electron window opens with hot reload — this is what you want if you're reading the code alongside using it, or contributing.
+
+To build your own standalone installer instead of downloading one:
+
+```bash
+npm run dist
+```
+
+Produces `.dmg`/`.app` (macOS), `.exe`/NSIS installer (Windows), or `.AppImage` (Linux) in `release/`, depending on the OS you run it on. `npm run package` does the same build but skips zipping/installer creation — faster, useful for testing packaging locally.
+
+## How to use it
+
+1. **Open a repository** — type a local path, browse for a folder, or paste a GitHub URL to clone it automatically into `~/GitEdu-Repos/`.
+2. **Read the graph** — each box is a commit (hash, message, author, date); green tags are branches; lines show parentage. Scroll/zoom with the mouse.
+3. **Stage & commit** — click a file to see its diff, "Stage" it, write a message, hit "Commit". The confirmation panel shows the exact `git commit -m "..."` before it runs.
+4. **Branch, merge, rebase** — every action that changes history goes through the same preview-then-confirm flow. Merges and rebases highlight both branch tips on the graph.
+5. **Fetch / pull / push** — see the difference between "look at what changed remotely" (fetch) and "bring it into my branch" (pull) play out live.
+6. **Hit a conflict?** — GitEdu detects it automatically and opens a resolution panel: keep "ours", take "theirs", or mark resolved after editing the file yourself.
+7. **New to git entirely?** — flip to **Modo aprendizaje** and follow the 10-step guided sandbox. Nothing there touches a real file or repo.
+
+For a slower, plain-language walkthrough (in Spanish), see the **[full usage guide](docs/GUIA-DE-USO.md)** — it also answers the questions people ask most: *does this work alongside VS Code?*, *does clicking things push to GitHub?*, *what happens to my credentials?*
 
 ## Architecture
 
@@ -76,77 +146,31 @@ flowchart LR
 
 Every git invocation goes through `execFile` with an argument array — never a shell string — so user input (branch names, commit messages) can't break out into shell injection. See [`shared/ipc-contract.ts`](shared/ipc-contract.ts) for the full typed contract between processes.
 
+## The interesting bit: scripting `git rebase -i` with no terminal
+
+`git rebase -i` normally opens `$EDITOR` for you to hand-write a `pick`/`squash`/`drop` sequence, and pauses again on every `reword`/`squash` to edit commit messages. None of that works in a GUI with no TTY.
+
+GitEdu's [`gitActions.ts`](electron/services/gitActions.ts) builds the desired sequence itself and injects it with a well-known trick: set `GIT_SEQUENCE_EDITOR` to a `cp` command that copies a pre-written todo file over the one Git is about to open. Rewording is handled by inserting an `exec git commit --amend -F <message-file>` line right after the `pick` — using `-F` (read from file) rather than `-m` means a rewritten commit message can never break out into a shell command, however many quotes or `;` it contains. `squash` uses `fixup` under the hood specifically to avoid a second editor pause for combining messages.
+
+The one thing that *can* still legitimately pause a scripted rebase is a real content conflict — which is exactly what the conflict resolution panel is for. This was verified against disposable throwaway repos, including a rebase that pauses mid-sequence on a conflict, gets resolved, and resumes correctly.
+
 ## Tech stack
 
-Electron · TypeScript · React · Tailwind CSS v4 · React Flow · dagre · electron-vite · electron-builder
-
-## Running GitEdu
-
-GitEdu is a **desktop app**, not a website — there's no server to visit at `localhost`, no hosted version. You either run it from source or build a standalone app and double-click it, exactly like any other desktop program.
-
-Either way you need [Node.js](https://nodejs.org/) 18+ and `git` itself installed and on your `PATH`.
-
-**No GitHub login, ever.** GitEdu has no OAuth flow and stores no tokens — every clone/fetch/pull/push just shells out to your system's `git`, so authentication is whatever you already have configured on that machine (SSH key, macOS Keychain, `gh auth login`, a Windows credential manager...). Cloning a public repo needs nothing; a private one needs the same credentials `git clone` would need from a terminal.
-
-### Option A — run from source (fastest way to try it, or to hack on the code)
-
-```bash
-git clone https://github.com/Hermida95/gitedu.git
-cd gitedu
-npm install
-npm run dev
-```
-
-A real Electron window opens with hot reload. This is what you want if you're reading the code alongside using it, or contributing.
-
-### Option B — build a standalone app to just double-click
-
-```bash
-npm run dist
-```
-
-This produces a real installer/app for your OS in `release/` (`.dmg`/`.app` on macOS, `.exe`/NSIS installer on Windows, `.AppImage` on Linux) — something you (or anyone) can install without ever touching a terminal again afterwards.
-
-**macOS note:** this build isn't code-signed (that needs a paid Apple Developer account), so Gatekeeper will refuse to open it with "GitEdu is damaged and can't be opened" the first time. That's not actually true — it's just unsigned. To open it anyway: right-click the app → **Open** → **Open** again in the dialog, *or* run:
-
-```bash
-xattr -cr "/path/to/GitEdu.app"
-```
-
-`npm run package` (no `--` needed) does the same build but skips zipping/installer creation — faster, useful for testing packaging locally without producing a distributable file.
-
-## Capturing screenshots
-
-The fastest way — no need to find or set up a real repo with the right branch shape:
-
-```bash
-npm run dev
-```
-
-Switch to **Modo aprendizaje** and follow the guided lessons for a couple of steps (first commit, create a branch, a second commit, merge) — that alone gives you a graph with a real two-parent merge commit and branch badges to screenshot, and the command preview modal is one click away from any lesson step.
-
-Recommended shots:
-
-1. The main window with a populated graph (a couple of steps into a guided lesson).
-2. The command preview modal — trigger it from any commit/branch/merge button.
-3. The interactive rebase panel — only available in real mode, "Rebase interactivo sobre..." in the branch panel, needs an actual repo with at least two commits on a branch.
-4. The conflict panel — also real-mode only; easiest to trigger by merging two branches that touch the same line of the same file.
-
-Save them into `docs/screenshots/` and uncomment the image block at the top of this file.
+Electron · TypeScript · React · Tailwind CSS v4 · React Flow · dagre · electron-vite · electron-builder · Vitest
 
 ## Known limitations
 
 Being upfront about scope, since this was built to learn and to show real, working code rather than to cover every edge case:
 
 - The diff viewer shows the unified diff as text — no side-by-side view, no 3-way merge editor. Conflicts are resolved via "ours"/"theirs" or by editing the file externally and marking it resolved.
-- Interactive rebase covers pick/reword/squash/drop/reorder, not the full range of `git rebase -i` (no `edit` pauses, no `exec` steps beyond the internal reword mechanism).
-- No code signing configured for the packaged app — `npm run dist` produces an unsigned build.
-- No tags, no remote management UI (adding/removing remotes) — `origin` is set automatically when you clone by URL, but there's no button to add a second remote.
+- Interactive rebase covers pick/reword/squash/drop/reorder, not the full range of `git rebase -i` (no `edit` pauses, no arbitrary `exec` steps).
+- No code signing configured for the packaged app — every build is unsigned.
+- No tags UI, no remote management (adding/removing remotes) — `origin` is set automatically when you clone by URL.
 - The live watcher (`fs.watch` with `recursive: true`) only works natively on macOS and Windows; on Linux it silently falls back to manual refresh.
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for the threat model and the results of a real audit pass, including two issues that were found and fixed (a path-traversal bug and a shell-injection edge case).
+See [SECURITY.md](SECURITY.md) for the full threat model and audit history, including two real issues that were found and fixed (a path-traversal bug and a shell-injection edge case) plus a second pass covering the sandbox mode, the recent-repos list, and GitHub Actions supply-chain hardening.
 
 ## License
 
