@@ -72,15 +72,17 @@ Grab a ready-to-run build from **[the latest release](https://github.com/Hermida
 
 | Platform | File | Notes |
 |---|---|---|
-| 🍎 macOS (Apple Silicon) | `GitEdu-<version>-arm64.dmg` | Unsigned — see the Gatekeeper note below. |
+| 🍎 macOS (Apple Silicon) | `GitEdu-<version>-arm64.dmg` | Unsigned — **read the note right below before opening it.** |
 | 🪟 Windows | `GitEdu-Setup-<version>.exe` | NSIS installer. |
 | 🐧 Linux | `GitEdu-<version>.AppImage` | `chmod +x` it, then run directly. |
 
-**macOS note:** this build isn't code-signed (that needs a paid Apple Developer account), so Gatekeeper will refuse to open it the first time with "GitEdu is damaged and can't be opened." That's not actually true — it's just unsigned. Right-click the app → **Open** → **Open** again in the dialog, or run:
-
-```bash
-xattr -cr "/path/to/GitEdu.app"
-```
+> ⚠️ **On macOS, opening the `.dmg` for the first time will say "GitEdu is damaged and can't be opened. You should move it to the Trash."** This is **not true** — the app isn't damaged, it's just unsigned (proper code signing needs a paid $99/year Apple Developer account, which this personal project doesn't have). macOS's Gatekeeper shows this exact "damaged" message — not the usual "unidentified developer" one — specifically for unsigned Apple Silicon builds. **Don't delete it.** After dragging `GitEdu.app` to `/Applications`, open Terminal and run:
+>
+> ```bash
+> xattr -cr /Applications/GitEdu.app
+> ```
+>
+> Then open it normally. This removes the quarantine flag macOS puts on anything downloaded from the internet — it's a one-time step, and it's exactly what you'd expect from any indie/open-source app without a paid certificate.
 
 **No GitHub login, ever.** GitEdu has no OAuth flow and stores no tokens — every clone/fetch/pull/push shells out to your system's `git`, so authentication is whatever you already have configured on that machine (SSH key, macOS Keychain, `gh auth login`, a Windows credential manager...).
 
