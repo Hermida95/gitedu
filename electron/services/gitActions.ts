@@ -38,6 +38,22 @@ async function runGit(repoPath: string, args: string[]): Promise<GitActionResult
   }
 }
 
+// Ningún nombre de rama real de git puede empezar por '-' (git check-ref-format
+// lo rechaza al crearla). Un valor que sí empiece por '-' solo puede ser un intento
+// de colar una opción de git donde se esperaba un nombre de rama — por ejemplo
+// '--exec=<comando>' en rebaseBranch, que git ejecuta de verdad tras cada commit
+// si hay una rama con upstream configurado (se comprobó con un PoC real antes de
+// escribir esto). La UI de GitEdu siempre manda nombres reales devueltos por
+// listBranches(), nunca texto libre, pero esto es la última barrera si algo (un
+// bug, una llamada a window.gitedu.* hecha a mano) intentase lo contrario — el
+// mismo criterio que ya se aplica al hash del rebase interactivo más abajo.
+function assertSafeRefName(name: string, command: string): GitActionResult | null {
+  if (!name || name.startsWith('-')) {
+    return { success: false, command, output: '', error: `Nombre de rama inválido: "${name}".` }
+  }
+  return null
+}
+
 // A diferencia de runGit, esta NO exige que ya exista un .git — es precisamente
 // para el caso contrario: una carpeta normal que todavía no es un repositorio.
 export async function initRepo(folderPath: string): Promise<GitActionResult> {
@@ -71,14 +87,23 @@ export const commitChanges = (repoPath: string, message: string): Promise<GitAct
 export const createBranch = (repoPath: string, name: string): Promise<GitActionResult> =>
   runGit(repoPath, ['branch', '--', name])
 
-export const checkoutBranch = (repoPath: string, name: string): Promise<GitActionResult> =>
-  runGit(repoPath, ['checkout', name])
+// Sin '--' aquí a propósito: 'git checkout -- <rama>' NO cambia de rama, la trata
+// como una ruta de fichero a restaurar y falla — la defensa es assertSafeRefName arriba,
+// no un separador de opciones (a diferencia de merge/rebase, donde '--' sí es seguro).
+export const checkoutBranch = (repoPath: string, name: string): Promise<GitActionResult> => {
+  const invalid = assertSafeRefName(name, formatCommand(['checkout', name]))
+  return invalid ? Promise.resolve(invalid) : runGit(repoPath, ['checkout', name])
+}
 
-export const mergeBranch = (repoPath: string, branchName: string): Promise<GitActionResult> =>
-  runGit(repoPath, ['merge', '--no-edit', branchName])
+export const mergeBranch = (repoPath: string, branchName: string): Promise<GitActionResult> => {
+  const invalid = assertSafeRefName(branchName, formatCommand(['merge', '--no-edit', branchName]))
+  return invalid ? Promise.resolve(invalid) : runGit(repoPath, ['merge', '--no-edit', '--', branchName])
+}
 
-export const rebaseBranch = (repoPath: string, ontoBranch: string): Promise<GitActionResult> =>
-  runGit(repoPath, ['rebase', ontoBranch])
+export const rebaseBranch = (repoPath: string, ontoBranch: string): Promise<GitActionResult> => {
+  const invalid = assertSafeRefName(ontoBranch, formatCommand(['rebase', ontoBranch]))
+  return invalid ? Promise.resolve(invalid) : runGit(repoPath, ['rebase', '--', ontoBranch])
+}
 
 export const pushBranch = (repoPath: string): Promise<GitActionResult> => runGit(repoPath, ['push'])
 
@@ -166,6 +191,9 @@ export async function runInteractiveRebase(
     return { success: false, command, output: '', error: invalidRepoError }
   }
 
+  const invalidRef = assertSafeRefName(ontoBranch, command)
+  if (invalidRef) return invalidRef
+
   // Cada hash acaba en dos sitios sensibles: una línea de la secuencia de rebase
   // (que git interpreta) y, en los reword, el nombre de un fichero usado dentro
   // de una línea `exec` (que git ejecuta con una shell). La UI de GitEdu siempre
@@ -207,7 +235,7 @@ export async function runInteractiveRebase(
     const todoFile = path.join(tmpDir, 'todo.txt')
     await fsPromises.writeFile(todoFile, todoLines.join('\n') + '\n', 'utf8')
 
-    const { stdout, stderr } = await execFileAsync('git', ['rebase', '-i', ontoBranch], {
+    const { stdout, stderr } = await execFileAsync('git', ['rebase', '-i', '--', ontoBranch], {
       cwd: repoPath,
       maxBuffer: 1024 * 1024 * 10,
       env: { ...GIT_ENV, GIT_SEQUENCE_EDITOR: `cp "${todoFile}"` },
@@ -241,8 +269,31 @@ function deriveRepoFolderName(remoteUrl: string): string {
   return safeName
 }
 
+// remoteUrl llega tal cual por IPC y se pasa a `git clone` como argumento —
+// sin esto, un valor como "--upload-pack=<comando>" no se interpreta como una
+// URL sino como una opción de git, y con la combinación adecuada de argumentos
+// git ejecuta ese "comando" de verdad (variante local del mismo tipo de bug que
+// CVE-2017-1000117). La UI (isRemoteUrl en App.tsx) ya solo deja pasar https://
+// o git@, pero eso es un filtro del renderer, no una barrera real: el propio
+// SECURITY.md de este proyecto ya trata un renderer comprometido como un
+// escenario válido a defender, así que se repite aquí la misma validación en
+// el proceso principal. Igual que con el hash del rebase interactivo: cualquier
+// valor que empiece por '-' se rechaza directamente, sin intentar adivinar si
+// es "seguro".
+// Exportada solo para poder probar la validación de formato sin disparar un
+// clone de verdad (red + escritura en ~/GitEdu-Repos) desde los tests.
+export function isAllowedRemoteUrl(remoteUrl: string): boolean {
+  return /^(https?:\/\/|git@)/i.test(remoteUrl.trim())
+}
+
 export async function cloneRepo(remoteUrl: string): Promise<CloneRepoResult> {
   const destParent = path.join(os.homedir(), 'GitEdu-Repos')
+
+  if (!isAllowedRemoteUrl(remoteUrl)) {
+    const command = `git clone ${remoteUrl}`
+    return { success: false, command, localPath: '', output: '', error: `URL de repositorio inválida: "${remoteUrl}".` }
+  }
+
   const localPath = path.join(destParent, deriveRepoFolderName(remoteUrl))
   const command = `git clone ${remoteUrl} ${localPath}`
 
@@ -259,9 +310,15 @@ export async function cloneRepo(remoteUrl: string): Promise<CloneRepoResult> {
 
   try {
     await fsPromises.mkdir(destParent, { recursive: true })
-    const { stdout, stderr } = await execFileAsync('git', ['clone', remoteUrl, localPath], {
+    // '--' además de la validación de arriba: aunque algo se colara por
+    // ALLOWED_REMOTE_URL, '--' obliga a git a tratar remoteUrl y localPath como
+    // posicionales (repositorio, directorio), nunca como opciones.
+    // GIT_ALLOW_PROTOCOL restringe qué transportes puede usar este clone en
+    // concreto (bloquea 'ext::', 'fd::'...) sin depender de que la config del
+    // usuario en esta máquina tenga esos protocolos deshabilitados por defecto.
+    const { stdout, stderr } = await execFileAsync('git', ['clone', '--', remoteUrl, localPath], {
       maxBuffer: 1024 * 1024 * 10,
-      env: GIT_ENV,
+      env: { ...GIT_ENV, GIT_ALLOW_PROTOCOL: 'http:https:ssh:git' },
     })
     return { success: true, command, localPath, output: stdout || stderr }
   } catch (err) {
