@@ -1,6 +1,6 @@
 {
   "name": "gitedu",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Aplicación de escritorio didáctica para visualizar y entender repositorios Git locales.",
   "main": "./out/main/index.js",
   "private": true,
