@@ -9,8 +9,12 @@ export interface LessonStep {
 }
 
 // Secuencia deliberada: cada paso hace divergir main/feature un poco más antes
-// de fusionar, para que el merge del paso 6 sea un merge real (con dos padres)
+// de fusionar, para que el merge del paso 7 sea un merge real (con dos padres)
 // y no un fast-forward — así se ve el caso más instructivo, no el más simple.
+// El paso 'diverge-main' es imprescindible para eso: sin un commit propio en
+// main después de crear la rama, main sigue siendo antecesor directo de
+// feature y el "merge" sería solo mover el puntero (fast-forward), sin
+// generar nunca el commit de dos padres que el paso 'merge' exige completar.
 export const LESSONS: LessonStep[] = [
   {
     id: 'first-commit',
@@ -47,6 +51,14 @@ export const LESSONS: LessonStep[] = [
     instruction: 'Vuelve a la rama "main" — es donde vas a traer los cambios de "feature".',
     hint: 'Checkout en "main".',
     isComplete: (state) => state.currentBranch === 'main',
+  },
+  {
+    id: 'diverge-main',
+    title: 'Avanzar main también',
+    instruction:
+      'Para que el merge sea interesante, main también necesita su propio commit — si no, fusionar sería un simple "fast-forward" sin nada que ver. Simula otro cambio y commitea aquí, en main.',
+    hint: 'Igual que antes: simular cambio → stage → commit, ahora estando en main.',
+    isComplete: (state) => state.currentBranch === 'main' && state.commits.length >= 3,
   },
   {
     id: 'merge',

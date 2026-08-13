@@ -15,17 +15,18 @@
 
 > 🚧 Personal / educational project, not a production tool. Built end-to-end in a focused series of sessions to explore Electron's process model and Git internals in depth — and to have something real to point at.
 
-<!--
-  Drop your own screenshots here (see "Screenshots" below) and uncomment.
-  Recommended shots, in this order:
-    1. docs/screenshots/graph.png             – full window, a repo with a merge loaded
-    2. docs/screenshots/command-preview.png   – the confirmation modal before a merge/rebase
-    3. docs/screenshots/interactive-rebase.png – the interactive rebase editor
-    4. docs/screenshots/conflict.png          – the conflict resolution panel
+![GitEdu — a real two-parent merge commit on the graph](docs/screenshots/graph.png)
 
-  ![GitEdu — commit graph](docs/screenshots/graph.png)
-  ![Command preview before running a merge](docs/screenshots/command-preview.png)
--->
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/command-preview.png" alt="Command preview modal before running a commit"></td>
+<td width="50%"><img src="docs/screenshots/interactive-rebase.png" alt="Interactive rebase editor"></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/screenshots/conflict.png" alt="Conflict resolution panel"></td>
+<td width="50%" valign="middle" align="center"><em>Screenshots captured from the sandbox / a mocked session — no real repository was touched.</em></td>
+</tr>
+</table>
 
 ---
 
@@ -47,7 +48,7 @@
 
 Most Git GUIs optimize for speed: click, and it's done. That's great once you already know Git, but it teaches you nothing about what actually happened. GitEdu inverts that priority — every state-changing action (`commit`, `merge`, `rebase`, `push`...) stops first at a preview panel showing the literal command, a plain-language explanation of what it does, and what it will change on the graph. Only then do you confirm.
 
-The same philosophy drives the built-in **learning mode**: a fully sandboxed, in-memory fake repository where you can click through commits, branches, merges and rebases with zero risk to any real project, guided by a 10-step lesson track.
+The same philosophy drives the built-in **learning mode**: a fully sandboxed, in-memory fake repository where you can click through commits, branches, merges and rebases with zero risk to any real project, guided by an 11-step lesson track.
 
 ## Features
 
@@ -60,7 +61,7 @@ The same philosophy drives the built-in **learning mode**: a fully sandboxed, in
 | ⚠️ **Conflict resolution panel** | Detects an in-progress merge or rebase, lists conflicted files, and lets you resolve via "ours" / "theirs" or mark as resolved after a manual edit, then continue or abort. |
 | 📄 **Diff viewer** | Click any file in the status list for its unified diff — staged, unstaged, or the full content of a new untracked file. |
 | 🔴 **Live refresh** | Watches the repo's `.git` directory. Run a git command from a terminal (or another tool) while GitEdu has that repo open, and it notices and reloads on its own — a small "en vivo" badge shows when this is active. |
-| 🎓 **Sandbox / learning mode** | A "Modo aprendizaje" toggle switches to a fake repository that lives entirely in memory — no clone, no folder, no filesystem access at all. Same graph, same command-preview modal, backed by a pure in-memory git model ([`gitSimulator.ts`](src/lib/gitSimulator.ts)), with a guided 10-step lesson track for people who've never touched git. |
+| 🎓 **Sandbox / learning mode** | A "Modo aprendizaje" toggle switches to a fake repository that lives entirely in memory — no clone, no folder, no filesystem access at all. Same graph, same command-preview modal, backed by a pure in-memory git model ([`gitSimulator.ts`](src/lib/gitSimulator.ts)), with a guided 11-step lesson track for people who've never touched git. |
 | 🌐 **Open a repo by URL** | Paste a `https://github.com/...` (or `git@...`) link and it clones into `~/GitEdu-Repos/` and loads it. GitEdu only ever reads/writes local repos — there's no "remote mode". |
 | 🆕 **Initialize a fresh repo** | Point GitEdu at a plain folder that isn't a git repo yet, and it offers to run `git init` right there instead of just failing. |
 | 🕘 **Recent repos** | The last 8 repos you opened, one click away — persisted locally, never sent anywhere. |
@@ -112,7 +113,7 @@ Produces `.dmg`/`.app` (macOS), `.exe`/NSIS installer (Windows), or `.AppImage` 
 4. **Branch, merge, rebase** — every action that changes history goes through the same preview-then-confirm flow. Merges and rebases highlight both branch tips on the graph.
 5. **Fetch / pull / push** — see the difference between "look at what changed remotely" (fetch) and "bring it into my branch" (pull) play out live.
 6. **Hit a conflict?** — GitEdu detects it automatically and opens a resolution panel: keep "ours", take "theirs", or mark resolved after editing the file yourself.
-7. **New to git entirely?** — flip to **Modo aprendizaje** and follow the 10-step guided sandbox. Nothing there touches a real file or repo.
+7. **New to git entirely?** — flip to **Modo aprendizaje** and follow the 11-step guided sandbox. Nothing there touches a real file or repo.
 
 For a slower, plain-language walkthrough (in Spanish), see the **[full usage guide](docs/GUIA-DE-USO.md)** — it also answers the questions people ask most: *does this work alongside VS Code?*, *does clicking things push to GitHub?*, *what happens to my credentials?*
 

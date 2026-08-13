@@ -41,15 +41,20 @@ const GRAPH_LOADING_FALLBACK = (
 const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
 
 function App() {
-  // Modo real (repo en disco, vía IPC) vs. sandbox (motor en memoria, ver
-  // gitSimulator.ts) — mutuamente excluyentes, cada uno con su propia rama del JSX abajo.
-  const [mode, setMode] = useState<'real' | 'sandbox'>('real')
-
   // Identidad y carga del repo activo. `repoPath` es el texto del input
   // (puede ser una ruta o una URL sin cargar todavía); `activeRepoPath` es el
   // último repo que se cargó con éxito y es el que vigila el watcher.
   const [repoPath, setRepoPath] = useState('')
   const [recentRepos, setRecentRepos] = useState<string[]>(getRecentRepos)
+
+  // Modo real (repo en disco, vía IPC) vs. sandbox (motor en memoria, ver
+  // gitSimulator.ts) — mutuamente excluyentes, cada uno con su propia rama del JSX
+  // abajo. Por defecto se abre en sandbox: GitEdu se presenta como herramienta
+  // educativa, así que quien la abre por primera vez (sin repos recientes) debería
+  // aterrizar directamente en las lecciones guiadas, no en un formulario vacío
+  // pidiendo una ruta. Quien ya la ha usado con un repo real vuelve a "real"
+  // automáticamente, para no interrumpir su flujo de trabajo habitual.
+  const [mode, setMode] = useState<'real' | 'sandbox'>(() => (recentRepos.length > 0 ? 'real' : 'sandbox'))
   const [activeRepoPath, setActiveRepoPath] = useState('')
   const [commits, setCommits] = useState<Commit[]>([])
   const [rawOutput, setRawOutput] = useState('')
