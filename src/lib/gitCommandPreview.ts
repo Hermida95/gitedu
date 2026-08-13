@@ -1,3 +1,11 @@
+// Traduce cada acción git que la UI puede lanzar a lo que se le enseña al
+// usuario ANTES de ejecutarla: el comando exacto, una explicación en lenguaje
+// llano, y el impacto esperado sobre el grafo. Este es el corazón didáctico
+// de GitEdu — se usa tanto en modo real (CommandPreviewModal, antes de llamar
+// a IPC) como en modo sandbox (gitSimulator.ts no lo usa directamente, pero
+// SandboxView sí, para mostrar la misma vista previa sobre estados simulados).
+// `danger: true` marca acciones que reescriben historia ya compartida o
+// destruyen datos sin posibilidad de deshacer (rebase, push, stash drop).
 export type GitAction =
   | { type: 'commit'; message: string }
   | { type: 'createBranch'; name: string }

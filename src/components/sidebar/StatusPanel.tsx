@@ -1,3 +1,7 @@
+// Staging area + commit: agrupa los ficheros por staged/sin-stage/untracked y
+// deja escribir el mensaje de commit. No ejecuta nada directamente — stage y
+// unstage se disparan al instante (runImmediate en App.tsx), pero el commit
+// en sí pasa siempre por onRequestCommit -> CommandPreviewModal, nunca al pulsar el botón.
 import { useState } from 'react'
 import type { FileStatus, RepoStatus } from '../../../shared/ipc-contract'
 

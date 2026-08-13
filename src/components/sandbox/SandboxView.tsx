@@ -1,3 +1,9 @@
+// Modo "aprendizaje": la misma UI de acciones y el mismo CommandPreviewModal
+// que el modo real, pero aplicadas sobre gitSimulator.ts en vez de sobre IPC —
+// así el usuario ve el mismo flujo "comando antes de ejecutar" sin arriesgar
+// ningún repo de verdad. `applyAction` es el punto donde un GitAction (tipo
+// compartido con el modo real, ver gitCommandPreview.ts) se traduce a la
+// función pura del simulador correspondiente.
 import { useEffect, useState } from 'react'
 import { CommitGraph } from '../graph/CommitGraph'
 import { CommandPreviewModal } from '../command-preview/CommandPreviewModal'

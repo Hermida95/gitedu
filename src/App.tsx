@@ -1,3 +1,8 @@
+// Componente raíz: orquesta todo el estado de nivel de aplicación (repo
+// activo, grafo, status, ramas, stashes, conflictos, la acción pendiente de
+// confirmación) y compone los paneles/modales que operan sobre él. Los
+// componentes hijos son en su mayoría "tontos" — reciben datos y callbacks,
+// y toda la lógica de qué llamar y cuándo refrescar vive aquí.
 import { lazy, Suspense, useEffect, useState } from 'react'
 import type {
   BranchInfo,
@@ -36,7 +41,13 @@ const GRAPH_LOADING_FALLBACK = (
 const isRemoteUrl = (value: string): boolean => /^(https?:\/\/|git@)/i.test(value.trim())
 
 function App() {
+  // Modo real (repo en disco, vía IPC) vs. sandbox (motor en memoria, ver
+  // gitSimulator.ts) — mutuamente excluyentes, cada uno con su propia rama del JSX abajo.
   const [mode, setMode] = useState<'real' | 'sandbox'>('real')
+
+  // Identidad y carga del repo activo. `repoPath` es el texto del input
+  // (puede ser una ruta o una URL sin cargar todavía); `activeRepoPath` es el
+  // último repo que se cargó con éxito y es el que vigila el watcher.
   const [repoPath, setRepoPath] = useState('')
   const [recentRepos, setRecentRepos] = useState<string[]>(getRecentRepos)
   const [activeRepoPath, setActiveRepoPath] = useState('')
@@ -51,11 +62,18 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [watching, setWatching] = useState(false)
 
+  // Ciclo de vida de una acción con confirmación (ver confirmPendingAction):
+  // pendingAction llena el CommandPreviewModal; al confirmarse, lastCommand
+  // alimenta el CommandLog. resetToken se incrementa tras cada acción exitosa
+  // y se pasa como `key` a StatusPanel para forzar su remonte — así se
+  // descarta cualquier borrador de mensaje de commit o selección de fichero
+  // que ya no tiene sentido una vez que el estado del repo cambió.
   const [pendingAction, setPendingAction] = useState<GitAction | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [lastCommand, setLastCommand] = useState<LastCommand | null>(null)
   const [resetToken, setResetToken] = useState(0)
 
+  // Paneles modales que se abren aparte del flujo de confirmación estándar.
   const [interactiveRebaseTarget, setInteractiveRebaseTarget] = useState<string | null>(null)
   const [diffTarget, setDiffTarget] = useState<FileStatus | null>(null)
 
@@ -254,6 +272,8 @@ function App() {
 
   const currentBranchName = status?.branch ?? null
 
+  // Mientras se confirma un merge/rebase, resalta en el grafo las dos ramas
+  // implicadas (origen y destino) para que se vea de un vistazo qué va a combinarse.
   const highlightRefs =
     pendingAction?.type === 'mergeBranch'
       ? [pendingAction.currentBranch, pendingAction.branchName].filter((r): r is string => !!r)

@@ -1,3 +1,6 @@
+// Punto de entrada del proceso principal de Electron: crea la ventana,
+// registra todos los handlers IPC (uno por archivo en ./ipc/) y aplica el
+// endurecimiento de seguridad de la ventana (ver comentarios más abajo).
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 import { registerGitHandlers } from './ipc/gitHandlers'

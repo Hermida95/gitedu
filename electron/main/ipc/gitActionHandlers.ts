@@ -1,3 +1,6 @@
+// Handlers IPC de escritura (commit, merge, rebase, push, stash...): cada uno
+// delega directamente en la función homónima de gitActions.ts. Igual que en
+// gitHandlers.ts, se mantienen sin lógica propia a propósito.
 import { ipcMain } from 'electron'
 import {
   abortMerge,

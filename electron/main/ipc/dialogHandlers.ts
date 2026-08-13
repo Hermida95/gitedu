@@ -1,3 +1,4 @@
+// Diálogos nativos del sistema operativo (por ahora solo "elegir carpeta").
 import { BrowserWindow, dialog, ipcMain } from 'electron'
 import { IPC_CHANNELS } from '../../../shared/ipc-contract'
 

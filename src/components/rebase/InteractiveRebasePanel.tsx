@@ -1,3 +1,11 @@
+// Editor visual del "todo file" de un `git rebase -i`: cada commit es una
+// fila con acción (pick/reword/squash/drop) y orden reordenable. `rows` es el
+// estado editable en el cliente; solo al ejecutar se traduce a RebaseStep[] y
+// se manda por IPC, donde runInteractiveRebase (gitActions.ts) construye el
+// todo file real y valida cada hash antes de tocar git. buildTodoPreview de
+// aquí es SOLO una vista previa textual para el usuario — no es lo que se
+// ejecuta; el guion real usa -F con un fichero, nunca -m con texto inline,
+// justo para evitar el problema de escapado que este preview sí tiene que hacer a mano.
 import { useEffect, useState } from 'react'
 import type { GitActionResult, RebaseCommitInfo, RebaseStep, RebaseStepAction } from '../../../shared/ipc-contract'
 import { Modal } from '../Modal'

@@ -1,3 +1,6 @@
+// Ramas + las acciones que las mueven: checkout, crear, merge, rebase (normal
+// e interactivo), fetch/pull/push. Todas las acciones "peligrosas" u opacas
+// pasan por onRequest*/onOpen* hacia App.tsx, que decide si piden confirmación.
 import { useState } from 'react'
 import type { BranchInfo } from '../../../shared/ipc-contract'
 

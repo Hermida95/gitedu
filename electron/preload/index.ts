@@ -1,3 +1,10 @@
+// Única puerta de entrada del renderer al mundo Node/Electron. Con
+// contextIsolation:true + sandbox:true, el renderer NO tiene `require` ni
+// `ipcRenderer` — solo ve el objeto `window.gitedu` que se construye aquí
+// explícitamente. Cada función es una llamada a un canal IPC concreto y
+// nada más: no se expone ipcRenderer en crudo, así que el renderer no puede
+// invocar un canal arbitrario que no esté listado abajo. Ver vite-env.d.ts
+// para el tipo `Window.gitedu` que usa el resto del renderer.
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   IPC_CHANNELS,
@@ -16,6 +23,7 @@ import {
 } from '../../shared/ipc-contract'
 
 contextBridge.exposeInMainWorld('gitedu', {
+  // --- Grafo y estado del repo (lecturas) ---
   getCommitGraph: (repoPath: string): Promise<GitLogResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_COMMIT_GRAPH, repoPath),
   getCommitGraphData: (repoPath: string): Promise<CommitGraphData> =>
@@ -27,6 +35,7 @@ contextBridge.exposeInMainWorld('gitedu', {
   listBranches: (repoPath: string): Promise<BranchListResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.LIST_BRANCHES, repoPath),
 
+  // --- Acciones de escritura ---
   stageFile: (repoPath: string, filePath: string): Promise<GitActionResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.STAGE_FILE, repoPath, filePath),
   unstageFile: (repoPath: string, filePath: string): Promise<GitActionResult> =>
@@ -43,6 +52,7 @@ contextBridge.exposeInMainWorld('gitedu', {
     ipcRenderer.invoke(IPC_CHANNELS.REBASE_BRANCH, repoPath, ontoBranch),
   push: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.PUSH, repoPath),
 
+  // --- Conflictos de merge/rebase ---
   getConflictState: (repoPath: string): Promise<ConflictState> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_CONFLICT_STATE, repoPath),
   resolveConflictOurs: (repoPath: string, filePath: string): Promise<GitActionResult> =>
@@ -60,17 +70,20 @@ contextBridge.exposeInMainWorld('gitedu', {
   abortRebase: (repoPath: string): Promise<GitActionResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.ABORT_REBASE, repoPath),
 
+  // --- Rebase interactivo ---
   getRebaseCommits: (repoPath: string, ontoBranch: string): Promise<RebaseCommitsResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_REBASE_COMMITS, repoPath, ontoBranch),
   runInteractiveRebase: (repoPath: string, ontoBranch: string, steps: RebaseStep[]): Promise<GitActionResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.RUN_INTERACTIVE_REBASE, repoPath, ontoBranch, steps),
 
+  // --- Clonar / inicializar ---
   cloneRepo: (remoteUrl: string): Promise<CloneRepoResult> => ipcRenderer.invoke(IPC_CHANNELS.CLONE_REPO, remoteUrl),
   initRepo: (folderPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.INIT_REPO, folderPath),
 
   fetch: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.FETCH, repoPath),
   pull: (repoPath: string): Promise<GitActionResult> => ipcRenderer.invoke(IPC_CHANNELS.PULL, repoPath),
 
+  // --- Stash ---
   listStashes: (repoPath: string): Promise<StashListResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.LIST_STASHES, repoPath),
   stashSave: (repoPath: string, message: string): Promise<GitActionResult> =>
@@ -80,9 +93,17 @@ contextBridge.exposeInMainWorld('gitedu', {
   stashDrop: (repoPath: string, index: number): Promise<GitActionResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.STASH_DROP, repoPath, index),
 
+  // --- Diff de un fichero ---
   getFileDiff: (repoPath: string, filePath: string, status: FileStatusCode): Promise<FileDiffResult> =>
     ipcRenderer.invoke(IPC_CHANNELS.GET_FILE_DIFF, repoPath, filePath, status),
 
+  // --- Vigilancia en vivo del repo ---
+  // watchRepo arranca un fs.watch en el main process sobre el .git indicado.
+  // onRepoChanged suscribe un callback al evento que ese watcher dispara (con
+  // debounce) cuando algo lo modifica desde fuera de la app — p.ej. el
+  // usuario ejecutando `git commit` a mano en una terminal. Devuelve una
+  // función de limpieza para que el componente pueda darse de baja al
+  // desmontarse y no acumular listeners duplicados en cada recarga del repo.
   watchRepo: (repoPath: string): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.WATCH_REPO, repoPath),
   onRepoChanged: (callback: () => void): (() => void) => {
     const listener = () => callback()

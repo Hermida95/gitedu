@@ -1,3 +1,8 @@
+// Operaciones de ESCRITURA sobre un repositorio git: todo lo que cambia su
+// estado (stage, commit, ramas, merge, rebase, push, stash...) pasa por aquí.
+// La mayoría de funciones son un fino wrapper sobre runGit() con el array de
+// argumentos concreto; el rebase interactivo y el clonado son las excepciones
+// con lógica propia (ver los comentarios grandes más abajo, en cada sección).
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import fsPromises from 'node:fs/promises'

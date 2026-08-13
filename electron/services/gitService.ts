@@ -1,3 +1,8 @@
+// Operaciones de LECTURA sobre un repositorio git: grafo de commits, estado de
+// ficheros, ramas, stashes, diffs... Nada aquí modifica el repo — las
+// escrituras (commit, merge, push...) viven en gitActions.ts. Separar ambas
+// cosas deja claro, con solo mirar el import, qué funciones pueden cambiar el
+// estado del repo del usuario y cuáles son siempre seguras de llamar.
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs'

@@ -1,3 +1,7 @@
+// Convierte la lista plana de Commit (venga de IPC real o del simulador) en
+// nodos/edges de React Flow y delega el posicionamiento en layout.ts. La
+// dirección de cada edge es commit -> padre (no al revés); ver el comentario
+// en layout.ts sobre por qué eso hace que el hijo quede arriba en pantalla.
 import { useMemo } from 'react'
 import { Background, Controls, MiniMap, ReactFlow, type Edge, type Node } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'

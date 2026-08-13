@@ -1,5 +1,9 @@
 /// <reference types="vite/client" />
 
+// Tipo de window.gitedu para el renderer: debe reflejar exactamente lo que
+// electron/preload/index.ts expone vía contextBridge, campo a campo. Es un
+// duplicado deliberado (no se puede importar código del proceso preload aquí)
+// — si se añade una función en preload/index.ts, hay que añadirla aquí también.
 import type {
   BranchListResult,
   CloneRepoResult,

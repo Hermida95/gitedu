@@ -1,3 +1,7 @@
+// Barra fija al pie de la app: muestra el último comando git ejecutado (y su
+// error, si falló). Es la mitad "después" del par didáctico con
+// CommandPreviewModal (el "antes") — juntos cierran el círculo de "aquí está
+// lo que se va a ejecutar" / "esto es lo que realmente pasó".
 export interface LastCommand {
   command: string
   success: boolean

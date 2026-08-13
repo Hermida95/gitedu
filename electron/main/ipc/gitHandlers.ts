@@ -1,3 +1,7 @@
+// Handlers IPC de solo lectura: cada uno delega directamente en la función
+// homónima de gitService.ts. Deliberadamente sin lógica propia — si algún
+// handler empieza a necesitar validación o transformación, esa lógica va en
+// el servicio, no aquí, para que gitService.ts se pueda probar sin Electron.
 import { ipcMain } from 'electron'
 import {
   getCommitGraph,

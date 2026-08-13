@@ -1,3 +1,8 @@
+// La pieza central de la promesa didáctica de GitEdu: antes de ejecutar
+// cualquier acción de escritura, se muestra el comando exacto, en qué
+// consiste y qué va a cambiar en el grafo — nunca se ejecuta nada a ciegas.
+// Puramente presentacional: recibe ya construido el CommandPreview (ver
+// gitCommandPreview.ts) y delega la confirmación/cancelación al padre.
 import type { CommandPreview } from '../../lib/gitCommandPreview'
 import { Modal } from '../Modal'
 
